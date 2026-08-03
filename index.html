@@ -223,7 +223,13 @@
     <div class="receipt">
       <h2>Ringkasan Transaksi</h2>
       <div id="cartSummaryLines"></div>
+      <div class="receipt-line"><span>Subtotal</span><span class="val" id="cartSubtotal">Rp0</span></div>
       <div class="receipt-line total"><span>Grand Total</span><span class="val" id="cartGrandTotal">Rp0</span></div>
+    </div>
+
+    <div class="card">
+      <label for="discountInput">Diskon (Rp)</label>
+      <input type="text" id="discountInput" inputmode="numeric" placeholder="Rp0">
     </div>
 
     <div class="card">
@@ -342,7 +348,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-03-owner-v4";
+const APP_VERSION = "2026-08-03-owner-v5";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -548,21 +554,25 @@ function renderMenuOwnerList(){
 }
 
 function updateCartSummary(){
-  let grandTotal = 0;
+  let subtotal = 0;
   const lines = [];
   document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
     const menu = item.dataset.menu;
     const qty = cart[menu] || 0;
     if(qty <= 0) return;
     const harga = parseFloat(item.dataset.harga) || 0;
-    const subtotal = qty * harga;
-    grandTotal += subtotal;
-    lines.push(`<div class="receipt-line"><span>${menu} × ${qty}</span><span class="val">${formatRupiah(subtotal)}</span></div>`);
+    const itemTotal = qty * harga;
+    subtotal += itemTotal;
+    lines.push(`<div class="receipt-line"><span>${menu} × ${qty}</span><span class="val">${formatRupiah(itemTotal)}</span></div>`);
   });
   $("cartSummaryLines").innerHTML = lines.join("") || '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item dipilih</p>';
+  const discount = parseRupiahInput($("discountInput"));
+  const grandTotal = Math.max(0, subtotal - discount);
+  $("cartSubtotal").textContent = formatRupiah(subtotal);
   $("cartGrandTotal").textContent = formatRupiah(grandTotal);
 }
-
+attachRupiahInput($("discountInput"));
+$("discountInput").addEventListener("input", updateCartSummary);
 // ---------- Status bayar toggle ----------
 function setStatusBayar(status){
   statusBayar = status;
@@ -602,18 +612,20 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
     return;
   }
   localStorage.setItem("nama_penjual_owner", penjual);
+  const discount = parseRupiahInput($("discountInput"));
   $("submitPenjualanBtn").disabled = true;
   $("penjualanStatusMsg").textContent = "Menyimpan...";
   $("penjualanStatusMsg").className = "status";
   try{
     const result = await apiPost({
       action: "submitPenjualanOwner", requestId: generateRequestId(),
-      penjual, customer, tanggal: localDateStr(new Date()), items, statusBayar
+      penjual, customer, tanggal: localDateStr(new Date()), items, statusBayar, discount
     });
     $("penjualanStatusMsg").textContent = `Transaksi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
     $("penjualanStatusMsg").className = "status ok";
     // reset form utk transaksi berikutnya
     $("customerInput").value = "";
+    $("discountInput").value = "";
     cart = {};
     document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
     document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
@@ -672,7 +684,7 @@ function renderBelumDibayar(list){
         <div class="bottom">
           <div>
             <div class="rp">${formatRupiah(t.total)}</div>
-            <div class="meta">${t.penjual} · ${t.jumlahItem} item</div>
+            <div class="meta">${t.penjual} · ${t.jumlahItem} item${t.discount > 0 ? ` · diskon ${formatRupiah(t.discount)}` : ''}</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
             ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
