@@ -199,7 +199,8 @@
   </div>
   <div class="tabs" id="procurementGroup" style="display:none;">
     <button class="tab-btn" data-screen="procurementScreen">Input</button>
-    <button class="tab-btn" data-screen="jenisProductScreen">Category</button>
+    <button class="tab-btn" data-screen="jenisProductScreen">Type</button>
+    <button class="tab-btn" data-screen="kategoriProductScreen">Category</button>
   </div>
 </header>
 
@@ -230,7 +231,14 @@
     <div class="card">
       <label for="discountInput">Diskon (Rp)</label>
       <input type="text" id="discountInput" inputmode="numeric" placeholder="Rp0">
+      <label for="keteranganInput">Keterangan (request khusus)</label>
+      <input type="text" id="keteranganInput" placeholder="Contoh: less sugar, no sugar, extra ice">
     </div>
+
+    <p class="status" id="editModeNote" style="display:none; color:var(--gold); font-weight:600;">
+      Mode Edit — sedang merevisi transaksi. Tekan "Simpan Revisi" untuk menyimpan, atau
+      <a href="#" id="cancelEditBtn" style="color:var(--maroon-dark);">batalkan</a>.
+    </p>
 
     <div class="card">
       <label style="margin:0 0 8px;">Status Bayar</label>
@@ -305,14 +313,26 @@
 
   <!-- ===================== JENIS PRODUCT ===================== -->
   <section class="screen" id="jenisProductScreen">
-    <p class="form-section-title" style="margin-top:0">Procurement Category</p>
+    <p class="form-section-title" style="margin-top:0">Procurement Type</p>
     <div class="card" id="jenisProductListCard"></div>
     <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Kategori Baru</p>
+      <p class="form-section-title" style="margin-top:0">Tambah Type Baru</p>
       <input type="text" id="newJenisProductInput" placeholder="Contoh: Sirup Vanilla">
       <button class="primary" id="addJenisProductBtn" style="margin-bottom:16px;">Tambah</button>
     </div>
     <p class="status" id="jenisProductStatusMsg"></p>
+  </section>
+
+  <!-- ===================== KATEGORI PRODUCT ===================== -->
+  <section class="screen" id="kategoriProductScreen">
+    <p class="form-section-title" style="margin-top:0">Procurement Category</p>
+    <div class="card" id="kategoriProductListCard"></div>
+    <div class="card">
+      <p class="form-section-title" style="margin-top:0">Tambah Category Baru</p>
+      <input type="text" id="newKategoriProductInput" placeholder="Contoh: Marketing">
+      <button class="primary" id="addKategoriProductBtn" style="margin-bottom:16px;">Tambah</button>
+    </div>
+    <p class="status" id="kategoriProductStatusMsg"></p>
   </section>
 
   <!-- ===================== SETTING MENU ===================== -->
@@ -348,7 +368,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-03-owner-v5";
+const APP_VERSION = "2026-08-03-owner-v7";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -368,6 +388,7 @@ let jenisProductList = [];
 let kategoriProductList = [];
 let cart = {}; // { menuName: qty }
 let statusBayar = "Sudah Dibayar";
+let editingTransaksiId = null;
 
 function formatRupiah(n){ return "Rp" + Math.round(n || 0).toLocaleString("id-ID"); }
 function attachRupiahInput(input){
@@ -394,6 +415,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     showScreen(btn.dataset.screen);
     if(btn.dataset.screen === "belumDibayarScreen") loadBelumDibayar();
     if(btn.dataset.screen === "jenisProductScreen") renderJenisProductList();
+    if(btn.dataset.screen === "kategoriProductScreen") renderKategoriProductList();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
   });
 });
@@ -588,9 +610,59 @@ $("btnUnpaid").addEventListener("click", () => setStatusBayar("Belum Dibayar"));
 $("btnOrder").addEventListener("click", () => setStatusBayar("PO"));
 
 // ---------- Submit Penjualan ----------
+function exitEditMode(){
+  editingTransaksiId = null;
+  $("editModeNote").style.display = "none";
+  $("submitPenjualanBtn").textContent = "Catat Transaksi";
+}
+$("cancelEditBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+  exitEditMode();
+  $("customerInput").value = "";
+  $("discountInput").value = "";
+  $("keteranganInput").value = "";
+  cart = {};
+  document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
+  document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
+  updateCartSummary();
+  $("btnPaid").click();
+});
+async function enterEditMode(transaksiId){
+  $("belumDibayarStatusMsg").textContent = "Memuat data transaksi...";
+  $("belumDibayarStatusMsg").className = "status";
+  try{
+    const detail = await apiPost({ action: "getTransaksiOwnerDetail", transaksiId });
+    editingTransaksiId = transaksiId;
+    $("penjualInput").value = detail.penjual;
+    $("customerInput").value = detail.customer || "";
+    $("discountInput").value = detail.discount ? "Rp" + Number(detail.discount).toLocaleString("id-ID") : "";
+    $("keteranganInput").value = detail.keterangan || "";
+    cart = {};
+    detail.items.forEach(it => { cart[it.menu] = it.qty; });
+    document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
+      const menu = item.dataset.menu;
+      const qty = cart[menu] || 0;
+      const qtyInput = item.querySelector(".qty");
+      qtyInput.value = qty;
+      item.querySelector(".subtotal").textContent = formatRupiah(qty * (parseFloat(item.dataset.harga) || 0));
+    });
+    updateCartSummary();
+    setStatusBayar(detail.statusBayar || "Belum Dibayar");
+    $("editModeNote").style.display = "block";
+    $("submitPenjualanBtn").textContent = "Simpan Revisi";
+    $("belumDibayarStatusMsg").textContent = "";
+    // pindah ke tab Input (grup Penjualan, sub-tab pertama)
+    document.querySelector('.group-btn[data-group="penjualanGroup"]').click();
+  }catch(e){
+    $("belumDibayarStatusMsg").textContent = "Gagal memuat transaksi: " + e.message;
+    $("belumDibayarStatusMsg").className = "status err";
+  }
+}
+
 $("submitPenjualanBtn").addEventListener("click", async () => {
   const penjual = $("penjualInput").value;
   const customer = $("customerInput").value.trim();
+  const keterangan = $("keteranganInput").value.trim();
   if(!penjual){
     $("penjualanStatusMsg").textContent = "Pilih nama penjual dulu";
     $("penjualanStatusMsg").className = "status err";
@@ -617,15 +689,27 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
   $("penjualanStatusMsg").textContent = "Menyimpan...";
   $("penjualanStatusMsg").className = "status";
   try{
-    const result = await apiPost({
-      action: "submitPenjualanOwner", requestId: generateRequestId(),
-      penjual, customer, tanggal: localDateStr(new Date()), items, statusBayar, discount
-    });
-    $("penjualanStatusMsg").textContent = `Transaksi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
+    const payload = {
+      penjual, customer, tanggal: localDateStr(new Date()), items, statusBayar, discount, keterangan
+    };
+    let result;
+    if(editingTransaksiId){
+      payload.action = "updateTransaksiOwner";
+      payload.transaksiId = editingTransaksiId;
+      result = await apiPost(payload);
+      $("penjualanStatusMsg").textContent = `Revisi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
+    } else {
+      payload.action = "submitPenjualanOwner";
+      payload.requestId = generateRequestId();
+      result = await apiPost(payload);
+      $("penjualanStatusMsg").textContent = `Transaksi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
+    }
     $("penjualanStatusMsg").className = "status ok";
+    exitEditMode();
     // reset form utk transaksi berikutnya
     $("customerInput").value = "";
     $("discountInput").value = "";
+    $("keteranganInput").value = "";
     cart = {};
     document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
     document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
@@ -681,18 +765,26 @@ function renderBelumDibayar(list){
         <div style="margin:4px 0;">
           <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:${badgeColor}; padding:2px 8px; border-radius:8px;">${statusLabel}</span>
         </div>
+        ${t.keterangan ? `<div class="meta" style="font-style:italic; margin-bottom:4px;">"${t.keterangan}"</div>` : ''}
         <div class="bottom">
           <div>
             <div class="rp">${formatRupiah(t.total)}</div>
             <div class="meta">${t.penjual} · ${t.jumlahItem} item${t.discount > 0 ? ` · diskon ${formatRupiah(t.discount)}` : ''}</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
+            ${t.status === "PO" ? '<button class="icon-btn editPoBtn" style="font-size:11px;">Edit</button>' : ''}
             ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
             ${t.status !== "Sudah Dibayar" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
           </div>
         </div>
       </div>`;
   }).join("");
+  container.querySelectorAll(".editPoBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest(".bill-item");
+      enterEditMode(row.dataset.id);
+    });
+  });
   container.querySelectorAll(".markDeliveredBtn").forEach(btn => {
     btn.addEventListener("click", async () => {
       const row = btn.closest(".bill-item");
@@ -812,6 +904,56 @@ $("addJenisProductBtn").addEventListener("click", async () => {
   }catch(e){
     $("jenisProductStatusMsg").textContent = "Gagal menyimpan: " + e.message;
     $("jenisProductStatusMsg").className = "status err";
+  }
+});
+
+// ---------- Kategori Product ----------
+function renderKategoriProductList(){
+  const card = $("kategoriProductListCard");
+  if(!kategoriProductList.length){ card.innerHTML = "<p>Belum ada Kategori Product.</p>"; return; }
+  card.innerHTML = kategoriProductList.map(k => `
+    <div class="list-manage-item" data-nama="${k}">
+      <div class="list-manage-info"><div class="list-manage-name">${k}</div></div>
+      <button class="icon-btn del">Hapus</button>
+    </div>`).join("");
+  card.querySelectorAll(".list-manage-item").forEach(row => {
+    row.querySelector(".del").addEventListener("click", async () => {
+      const nama = row.dataset.nama;
+      if(!confirm(`Hapus "${nama}" dari daftar Kategori Product?`)) return;
+      try{
+        await apiPost({ action: "deleteKategoriProduct", nama });
+        kategoriProductList = kategoriProductList.filter(k => k !== nama);
+        $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
+          kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
+        renderKategoriProductList();
+      }catch(e){
+        $("kategoriProductStatusMsg").textContent = "Gagal menghapus: " + e.message;
+        $("kategoriProductStatusMsg").className = "status err";
+      }
+    });
+  });
+}
+$("addKategoriProductBtn").addEventListener("click", async () => {
+  const nama = $("newKategoriProductInput").value.trim();
+  if(!nama){
+    $("kategoriProductStatusMsg").textContent = "Nama Kategori Product wajib diisi";
+    $("kategoriProductStatusMsg").className = "status err";
+    return;
+  }
+  $("kategoriProductStatusMsg").textContent = "Menyimpan...";
+  $("kategoriProductStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "addKategoriProduct", nama });
+    kategoriProductList.push(nama);
+    $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
+      kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
+    $("newKategoriProductInput").value = "";
+    $("kategoriProductStatusMsg").textContent = "Ditambahkan ✓";
+    $("kategoriProductStatusMsg").className = "status ok";
+    renderKategoriProductList();
+  }catch(e){
+    $("kategoriProductStatusMsg").textContent = "Gagal menyimpan: " + e.message;
+    $("kategoriProductStatusMsg").className = "status err";
   }
 });
 
