@@ -1,0 +1,14 @@
+{
+  "name": "Jeda Owner",
+  "short_name": "Jeda Owner",
+  "description": "Aplikasi pencatatan penjualan & procurement khusus Owner Jeda.co",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F6F3EC",
+  "theme_color": "#7A1E2B",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
