@@ -36,6 +36,13 @@
     background:rgba(255,255,255,0.18); color:#fff; font-size:12px; font-weight:600; cursor:pointer;
   }
   .tab-btn.active{ background:var(--paper); color:var(--maroon-dark); }
+  .tabs-group{ display:flex; gap:6px; margin-top:16px; }
+  .group-btn{
+    flex:1; padding:10px 4px; border:none; border-radius:10px 10px 0 0;
+    background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.75);
+    font-size:13px; font-weight:700; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .group-btn.active{ background:rgba(255,255,255,0.9); color:var(--maroon-dark); }
 
   main{ max-width:520px; margin:0 auto; padding:18px 16px 0; }
   .screen{ display:none; }
@@ -181,12 +188,18 @@
       <h1>Jeda Owner</h1>
     </div>
   </div>
-  <div class="tabs">
-    <button class="tab-btn active" data-screen="penjualanScreen">Penjualan</button>
-    <button class="tab-btn" data-screen="belumDibayarScreen">Belum Lunas</button>
-    <button class="tab-btn" data-screen="procurementScreen">Procurement</button>
-    <button class="tab-btn" data-screen="jenisProductScreen">Jenis Product</button>
+  <div class="tabs-group">
+    <button class="group-btn active" data-group="penjualanGroup">Penjualan</button>
+    <button class="group-btn" data-group="procurementGroup">Procurement</button>
+  </div>
+  <div class="tabs" id="penjualanGroup">
+    <button class="tab-btn active" data-screen="penjualanScreen">Input</button>
+    <button class="tab-btn" data-screen="belumDibayarScreen">Inquiry</button>
     <button class="tab-btn" data-screen="settingMenuScreen">Setting Menu</button>
+  </div>
+  <div class="tabs" id="procurementGroup" style="display:none;">
+    <button class="tab-btn" data-screen="procurementScreen">Input</button>
+    <button class="tab-btn" data-screen="jenisProductScreen">Category</button>
   </div>
 </header>
 
@@ -218,7 +231,7 @@
       <div class="paystatus-toggle">
         <button type="button" class="paystatus-btn active paid" id="btnPaid">✓ Sudah Dibayar</button>
         <button type="button" class="paystatus-btn" id="btnUnpaid">Belum Dibayar</button>
-        <button type="button" class="paystatus-btn" id="btnOrder">Order</button>
+        <button type="button" class="paystatus-btn" id="btnOrder">PO</button>
       </div>
     </div>
 
@@ -228,6 +241,15 @@
 
   <!-- ===================== BELUM DIBAYAR ===================== -->
   <section class="screen" id="belumDibayarScreen">
+    <p class="form-section-title" style="margin-top:0">Inquiry Penjualan</p>
+    <div class="card" style="padding:10px 12px;">
+      <select id="inquiryFilter" style="border:none; padding:6px;">
+        <option value="">Semua Status</option>
+        <option value="Sudah Dibayar">Sudah Lunas</option>
+        <option value="Belum Dibayar">Belum Lunas</option>
+        <option value="PO">PO</option>
+      </select>
+    </div>
     <div id="belumDibayarList"></div>
     <p class="status" id="belumDibayarStatusMsg"></p>
   </section>
@@ -277,9 +299,10 @@
 
   <!-- ===================== JENIS PRODUCT ===================== -->
   <section class="screen" id="jenisProductScreen">
+    <p class="form-section-title" style="margin-top:0">Procurement Category</p>
     <div class="card" id="jenisProductListCard"></div>
     <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Jenis Product Baru</p>
+      <p class="form-section-title" style="margin-top:0">Tambah Kategori Baru</p>
       <input type="text" id="newJenisProductInput" placeholder="Contoh: Sirup Vanilla">
       <button class="primary" id="addJenisProductBtn" style="margin-bottom:16px;">Tambah</button>
     </div>
@@ -295,19 +318,16 @@
       <input type="text" id="newMenuOwnerName" placeholder="Contoh: Coco Vanilla">
       <div class="row2">
         <div>
-          <label for="newMenuOwnerSub">Sub Kategori</label>
-          <select id="newMenuOwnerSub">
-            <option value="Cup">Minuman - Cup</option>
-            <option value="500 ml">Minuman - 500 ml (botol)</option>
-            <option value="1 Liter">Minuman - 1 Liter (botol)</option>
-            <option value="Cookies">Cookies (pcs)</option>
-          </select>
+          <label for="newMenuOwnerKategori">Kategori</label>
+          <select id="newMenuOwnerKategori"></select>
         </div>
         <div>
-          <label for="newMenuOwnerHarga">Harga (Rp)</label>
-          <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
+          <label for="newMenuOwnerSub">Sub Kategori</label>
+          <select id="newMenuOwnerSub"></select>
         </div>
       </div>
+      <label for="newMenuOwnerHarga">Harga (Rp)</label>
+      <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
       <button class="primary" id="addMenuOwnerBtn" style="margin-bottom:16px;">Tambah Menu</button>
     </div>
     <p class="status" id="settingMenuStatusMsg"></p>
@@ -322,18 +342,21 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-03-owner-v3";
+const APP_VERSION = "2026-08-03-owner-v4";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
 const $ = (id) => document.getElementById(id);
-const SUBKATEGORI_ORDER = ["Cup", "500 ml", "1 Liter", "Cookies"];
-const SUBKATEGORI_LABEL = {
-  "Cup": "Minuman - Cup",
-  "500 ml": "Minuman - 500 ml (botol)",
-  "1 Liter": "Minuman - 1 Liter (botol)",
-  "Cookies": "Cookies (pcs)"
-};
+let kategoriSubkategoriMap = { "Minuman": ["Cup", "200 ml", "500 ml", "1 Liter"], "Cookies": ["Classic", "Signature", "Scoopable"] };
+function groupOrderList(){
+  // urutan grup gabungan Kategori+SubKategori, mis. [{kategori:"Minuman",sub:"Cup"}, ...]
+  const list = [];
+  Object.keys(kategoriSubkategoriMap).forEach(kat => {
+    kategoriSubkategoriMap[kat].forEach(sub => list.push({ kategori: kat, sub }));
+  });
+  return list;
+}
+function groupLabel(kategori, sub){ return `${kategori} - ${sub}`; }
 let menuOwnerData = [];
 let jenisProductList = [];
 let kategoriProductList = [];
@@ -366,6 +389,16 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "belumDibayarScreen") loadBelumDibayar();
     if(btn.dataset.screen === "jenisProductScreen") renderJenisProductList();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
+  });
+});
+document.querySelectorAll(".group-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".group-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".tabs[id$='Group']").forEach(g => g.style.display = "none");
+    const group = $(btn.dataset.group);
+    group.style.display = "flex";
+    group.querySelector(".tab-btn").click(); // otomatis buka sub-tab pertama
   });
 });
 
@@ -402,6 +435,8 @@ async function loadOwnerInit(){
     menuOwnerData = data.menuOwner || [];
     jenisProductList = data.jenisProductList || [];
     kategoriProductList = data.kategoriProductList || [];
+    if(data.kategoriSubkategoriMap) kategoriSubkategoriMap = data.kategoriSubkategoriMap;
+    populateSubKategoriDropdown();
 
     const savedPenjual = localStorage.getItem("nama_penjual_owner") || "";
     const penjualSelect = $("penjualInput");
@@ -431,20 +466,32 @@ $("penjualInput").addEventListener("change", () => {
 });
 
 // ---------- Render daftar menu (Penjualan) ----------
+function populateSubKategoriDropdown(){
+  const katSelect = $("newMenuOwnerKategori");
+  const subSelect = $("newMenuOwnerSub");
+  const kategoris = Object.keys(kategoriSubkategoriMap);
+  katSelect.innerHTML = kategoris.map(k => `<option value="${k}">${k}</option>`).join("");
+  function refreshSub(){
+    const subs = kategoriSubkategoriMap[katSelect.value] || [];
+    subSelect.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join("");
+  }
+  katSelect.onchange = refreshSub;
+  refreshSub();
+}
+
 function renderMenuOwnerList(){
   const card = $("menuOwnerListCard");
   let html = "";
-  SUBKATEGORI_ORDER.forEach(sub => {
-    const items = sub === "Cookies"
-      ? menuOwnerData.filter(m => m.kategori === "Cookies")
-      : menuOwnerData.filter(m => m.kategori === "Minuman" && (m.subKategori || "Cup") === sub);
+  groupOrderList().forEach(({kategori, sub}) => {
+    const items = menuOwnerData.filter(m => m.kategori === kategori && (m.subKategori || "") === sub);
     if(!items.length) return;
-    const stored = localStorage.getItem("owner_group_collapsed:" + sub);
+    const groupKey = kategori + "|" + sub;
+    const stored = localStorage.getItem("owner_group_collapsed:" + groupKey);
     const collapsed = stored === null ? true : stored === "1";
     html += `
-      <div class="menu-group${collapsed ? ' collapsed' : ''}" data-group="${sub}">
+      <div class="menu-group${collapsed ? ' collapsed' : ''}" data-group="${groupKey}">
         <button type="button" class="menu-group-title">
-          <span>${SUBKATEGORI_LABEL[sub]}</span>
+          <span>${groupLabel(kategori, sub)}</span>
           <span class="toggle-icon">${collapsed ? '+' : '−'}</span>
         </button>
         <div class="menu-group-items">`;
@@ -523,12 +570,12 @@ function setStatusBayar(status){
   $("btnPaid").classList.toggle("paid", status === "Sudah Dibayar");
   $("btnUnpaid").classList.toggle("active", status === "Belum Dibayar");
   $("btnUnpaid").classList.toggle("unpaid", status === "Belum Dibayar");
-  $("btnOrder").classList.toggle("active", status === "Order");
-  $("btnOrder").classList.toggle("order", status === "Order");
+  $("btnOrder").classList.toggle("active", status === "PO");
+  $("btnOrder").classList.toggle("order", status === "PO");
 }
 $("btnPaid").addEventListener("click", () => setStatusBayar("Sudah Dibayar"));
 $("btnUnpaid").addEventListener("click", () => setStatusBayar("Belum Dibayar"));
-$("btnOrder").addEventListener("click", () => setStatusBayar("Order"));
+$("btnOrder").addEventListener("click", () => setStatusBayar("PO"));
 
 // ---------- Submit Penjualan ----------
 $("submitPenjualanBtn").addEventListener("click", async () => {
@@ -581,12 +628,14 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
 });
 
 // ---------- Belum Dibayar ----------
+let allTransaksiCache = [];
 async function loadBelumDibayar(){
   const container = $("belumDibayarList");
   container.innerHTML = '<p class="empty-note">Memuat...</p>';
   try{
-    const data = await apiGet({ action: "listBelumDibayar" });
-    renderBelumDibayar(data.transaksi || []);
+    const data = await apiGet({ action: "listTransaksiOwner" });
+    allTransaksiCache = data.transaksi || [];
+    applyInquiryFilter();
     $("belumDibayarStatusMsg").textContent = "";
   }catch(e){
     container.innerHTML = "";
@@ -594,15 +643,23 @@ async function loadBelumDibayar(){
     $("belumDibayarStatusMsg").className = "status err";
   }
 }
+function applyInquiryFilter(){
+  const filter = $("inquiryFilter").value;
+  const filtered = filter ? allTransaksiCache.filter(t => t.status === filter) : allTransaksiCache;
+  renderBelumDibayar(filtered);
+}
+$("inquiryFilter").addEventListener("change", applyInquiryFilter);
 function renderBelumDibayar(list){
   const container = $("belumDibayarList");
   if(!list.length){
-    container.innerHTML = '<p class="empty-note">Tidak ada transaksi Belum Dibayar / Order 🎉</p>';
+    container.innerHTML = '<p class="empty-note">Tidak ada transaksi untuk filter ini.</p>';
     return;
   }
+  const badgeColors = { "PO": "var(--gold)", "Belum Dibayar": "var(--danger)", "Sudah Dibayar": "var(--ok)" };
   container.innerHTML = list.map(t => {
     const tanggalStr = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
-    const badgeColor = t.status === "Order" ? "var(--gold)" : "var(--danger)";
+    const badgeColor = badgeColors[t.status] || "var(--ink-soft)";
+    const statusLabel = t.status === "Sudah Dibayar" ? "Sudah Lunas" : (t.status === "Belum Dibayar" ? "Belum Lunas" : t.status);
     return `
       <div class="bill-item" data-id="${t.idTransaksi}">
         <div class="top">
@@ -610,7 +667,7 @@ function renderBelumDibayar(list){
           <span class="tanggal">${tanggalStr}</span>
         </div>
         <div style="margin:4px 0;">
-          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:${badgeColor}; padding:2px 8px; border-radius:8px;">${t.status}</span>
+          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:${badgeColor}; padding:2px 8px; border-radius:8px;">${statusLabel}</span>
         </div>
         <div class="bottom">
           <div>
@@ -618,8 +675,8 @@ function renderBelumDibayar(list){
             <div class="meta">${t.penjual} · ${t.jumlahItem} item</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
-            ${t.status === "Order" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
-            <button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>
+            ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
+            ${t.status !== "Sudah Dibayar" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
           </div>
         </div>
       </div>`;
@@ -751,10 +808,10 @@ function renderMenuOwnerManage(){
   const card = $("menuOwnerManageCard");
   if(!menuOwnerData.length){ card.innerHTML = "<p>Belum ada menu.</p>"; return; }
   card.innerHTML = menuOwnerData.map(m => {
-    const subLabel = m.kategori === "Cookies" ? "Cookies (pcs)" : `Minuman - ${m.subKategori || "Cup"}`;
+    const subLabel = groupLabel(m.kategori, m.subKategori || "");
     return `
     <div class="list-manage-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
-         data-sub="${m.subKategori || 'Cup'}" data-harga="${m.harga}" data-satuan="${m.satuan}">
+         data-sub="${m.subKategori || ''}" data-harga="${m.harga}" data-satuan="${m.satuan}">
       <div class="list-manage-info">
         <div class="list-manage-name">${m.menu}</div>
         <div class="list-manage-sub">${subLabel} · ${formatRupiah(m.harga)}</div>
@@ -771,10 +828,10 @@ function renderMenuOwnerManage(){
 async function editMenuOwner(current){
   const namaBaru = prompt("Nama menu:", current.menu);
   if(namaBaru === null) return;
-  const subBaru = prompt(
-    "Sub kategori (ketik salah satu persis): Cup / 500 ml / 1 Liter / Cookies",
-    current.sub || "Cup"
-  );
+  const kategoriBaru = prompt("Kategori (ketik persis): " + Object.keys(kategoriSubkategoriMap).join(" / "), current.kategori);
+  if(kategoriBaru === null) return;
+  const subsForKat = kategoriSubkategoriMap[kategoriBaru.trim()] || [];
+  const subBaru = prompt("Sub kategori (ketik persis): " + subsForKat.join(" / "), current.sub || subsForKat[0]);
   if(subBaru === null) return;
   const hargaBaru = prompt("Harga (Rp):", current.harga);
   if(hargaBaru === null) return;
@@ -783,7 +840,7 @@ async function editMenuOwner(current){
   try{
     await apiPost({
       action: "updateMenuOwner", oldMenu: current.menu,
-      menu: namaBaru.trim(), subKategori: subBaru.trim(),
+      menu: namaBaru.trim(), kategori: kategoriBaru.trim(), subKategori: subBaru.trim(),
       harga: parseFloat(hargaBaru) || 0
     });
     $("settingMenuStatusMsg").textContent = "Menu diperbarui ✓";
@@ -813,6 +870,7 @@ async function deleteMenuOwner(nama){
 attachRupiahInput($("newMenuOwnerHarga"));
 $("addMenuOwnerBtn").addEventListener("click", async () => {
   const menu = $("newMenuOwnerName").value.trim();
+  const kategori = $("newMenuOwnerKategori").value;
   const subKategori = $("newMenuOwnerSub").value;
   const harga = parseRupiahInput($("newMenuOwnerHarga"));
   if(!menu){
@@ -823,7 +881,7 @@ $("addMenuOwnerBtn").addEventListener("click", async () => {
   $("settingMenuStatusMsg").textContent = "Menyimpan...";
   $("settingMenuStatusMsg").className = "status";
   try{
-    await apiPost({ action: "addMenuOwner", menu, subKategori, harga });
+    await apiPost({ action: "addMenuOwner", menu, kategori, subKategori, harga });
     $("newMenuOwnerName").value = ""; $("newMenuOwnerHarga").value = "";
     $("settingMenuStatusMsg").textContent = "Menu ditambahkan ✓";
     $("settingMenuStatusMsg").className = "status ok";
