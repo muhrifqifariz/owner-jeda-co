@@ -292,19 +292,22 @@
     <div class="card">
       <p class="form-section-title" style="margin-top:0">Tambah Menu Baru</p>
       <label for="newMenuOwnerName">Nama Menu</label>
-      <input type="text" id="newMenuOwnerName" placeholder="Contoh: Pistachio Latte">
+      <input type="text" id="newMenuOwnerName" placeholder="Contoh: Coco Vanilla">
       <div class="row2">
         <div>
-          <label for="newMenuOwnerKategori">Kategori</label>
-          <input type="text" id="newMenuOwnerKategori" placeholder="Contoh: Minuman">
+          <label for="newMenuOwnerSub">Sub Kategori</label>
+          <select id="newMenuOwnerSub">
+            <option value="Cup">Minuman - Cup</option>
+            <option value="500 ml">Minuman - 500 ml (botol)</option>
+            <option value="1 Liter">Minuman - 1 Liter (botol)</option>
+            <option value="Cookies">Cookies (pcs)</option>
+          </select>
         </div>
         <div>
-          <label for="newMenuOwnerSatuan">Satuan</label>
-          <input type="text" id="newMenuOwnerSatuan" placeholder="cup / pcs / box" value="cup">
+          <label for="newMenuOwnerHarga">Harga (Rp)</label>
+          <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
         </div>
       </div>
-      <label for="newMenuOwnerHarga">Harga (Rp)</label>
-      <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
       <button class="primary" id="addMenuOwnerBtn" style="margin-bottom:16px;">Tambah Menu</button>
     </div>
     <p class="status" id="settingMenuStatusMsg"></p>
@@ -319,11 +322,18 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-03-owner-v2";
+const APP_VERSION = "2026-08-03-owner-v3";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
 const $ = (id) => document.getElementById(id);
+const SUBKATEGORI_ORDER = ["Cup", "500 ml", "1 Liter", "Cookies"];
+const SUBKATEGORI_LABEL = {
+  "Cup": "Minuman - Cup",
+  "500 ml": "Minuman - 500 ml (botol)",
+  "1 Liter": "Minuman - 1 Liter (botol)",
+  "Cookies": "Cookies (pcs)"
+};
 let menuOwnerData = [];
 let jenisProductList = [];
 let kategoriProductList = [];
@@ -423,17 +433,18 @@ $("penjualInput").addEventListener("change", () => {
 // ---------- Render daftar menu (Penjualan) ----------
 function renderMenuOwnerList(){
   const card = $("menuOwnerListCard");
-  const kategoriOrder = [...new Set(menuOwnerData.map(m => m.kategori))];
   let html = "";
-  kategoriOrder.forEach(kat => {
-    const items = menuOwnerData.filter(m => m.kategori === kat);
+  SUBKATEGORI_ORDER.forEach(sub => {
+    const items = sub === "Cookies"
+      ? menuOwnerData.filter(m => m.kategori === "Cookies")
+      : menuOwnerData.filter(m => m.kategori === "Minuman" && (m.subKategori || "Cup") === sub);
     if(!items.length) return;
-    const stored = localStorage.getItem("owner_group_collapsed:" + kat);
+    const stored = localStorage.getItem("owner_group_collapsed:" + sub);
     const collapsed = stored === null ? true : stored === "1";
     html += `
-      <div class="menu-group${collapsed ? ' collapsed' : ''}" data-group="${kat}">
+      <div class="menu-group${collapsed ? ' collapsed' : ''}" data-group="${sub}">
         <button type="button" class="menu-group-title">
-          <span>${kat}</span>
+          <span>${SUBKATEGORI_LABEL[sub]}</span>
           <span class="toggle-icon">${collapsed ? '+' : '−'}</span>
         </button>
         <div class="menu-group-items">`;
@@ -739,15 +750,19 @@ $("addJenisProductBtn").addEventListener("click", async () => {
 function renderMenuOwnerManage(){
   const card = $("menuOwnerManageCard");
   if(!menuOwnerData.length){ card.innerHTML = "<p>Belum ada menu.</p>"; return; }
-  card.innerHTML = menuOwnerData.map(m => `
-    <div class="list-manage-item" data-menu="${m.menu}" data-kategori="${m.kategori}" data-harga="${m.harga}" data-satuan="${m.satuan}">
+  card.innerHTML = menuOwnerData.map(m => {
+    const subLabel = m.kategori === "Cookies" ? "Cookies (pcs)" : `Minuman - ${m.subKategori || "Cup"}`;
+    return `
+    <div class="list-manage-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
+         data-sub="${m.subKategori || 'Cup'}" data-harga="${m.harga}" data-satuan="${m.satuan}">
       <div class="list-manage-info">
         <div class="list-manage-name">${m.menu}</div>
-        <div class="list-manage-sub">${m.kategori} · ${formatRupiah(m.harga)} / ${m.satuan}</div>
+        <div class="list-manage-sub">${subLabel} · ${formatRupiah(m.harga)}</div>
       </div>
       <button class="icon-btn edit">Edit</button>
       <button class="icon-btn del">Hapus</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   card.querySelectorAll(".list-manage-item").forEach(row => {
     row.querySelector(".edit").addEventListener("click", () => editMenuOwner(row.dataset));
     row.querySelector(".del").addEventListener("click", () => deleteMenuOwner(row.dataset.menu));
@@ -756,10 +771,11 @@ function renderMenuOwnerManage(){
 async function editMenuOwner(current){
   const namaBaru = prompt("Nama menu:", current.menu);
   if(namaBaru === null) return;
-  const kategoriBaru = prompt("Kategori:", current.kategori);
-  if(kategoriBaru === null) return;
-  const satuanBaru = prompt("Satuan (cup/pcs/box/dll):", current.satuan);
-  if(satuanBaru === null) return;
+  const subBaru = prompt(
+    "Sub kategori (ketik salah satu persis): Cup / 500 ml / 1 Liter / Cookies",
+    current.sub || "Cup"
+  );
+  if(subBaru === null) return;
   const hargaBaru = prompt("Harga (Rp):", current.harga);
   if(hargaBaru === null) return;
   $("settingMenuStatusMsg").textContent = "Menyimpan...";
@@ -767,8 +783,8 @@ async function editMenuOwner(current){
   try{
     await apiPost({
       action: "updateMenuOwner", oldMenu: current.menu,
-      menu: namaBaru.trim(), kategori: kategoriBaru.trim(),
-      satuan: satuanBaru.trim(), harga: parseFloat(hargaBaru) || 0
+      menu: namaBaru.trim(), subKategori: subBaru.trim(),
+      harga: parseFloat(hargaBaru) || 0
     });
     $("settingMenuStatusMsg").textContent = "Menu diperbarui ✓";
     $("settingMenuStatusMsg").className = "status ok";
@@ -797,20 +813,18 @@ async function deleteMenuOwner(nama){
 attachRupiahInput($("newMenuOwnerHarga"));
 $("addMenuOwnerBtn").addEventListener("click", async () => {
   const menu = $("newMenuOwnerName").value.trim();
-  const kategori = $("newMenuOwnerKategori").value.trim();
-  const satuan = $("newMenuOwnerSatuan").value.trim() || "pcs";
+  const subKategori = $("newMenuOwnerSub").value;
   const harga = parseRupiahInput($("newMenuOwnerHarga"));
-  if(!menu || !kategori){
-    $("settingMenuStatusMsg").textContent = "Nama menu & kategori wajib diisi";
+  if(!menu){
+    $("settingMenuStatusMsg").textContent = "Nama menu wajib diisi";
     $("settingMenuStatusMsg").className = "status err";
     return;
   }
   $("settingMenuStatusMsg").textContent = "Menyimpan...";
   $("settingMenuStatusMsg").className = "status";
   try{
-    await apiPost({ action: "addMenuOwner", menu, kategori, satuan, harga });
-    $("newMenuOwnerName").value = ""; $("newMenuOwnerKategori").value = "";
-    $("newMenuOwnerSatuan").value = "cup"; $("newMenuOwnerHarga").value = "";
+    await apiPost({ action: "addMenuOwner", menu, subKategori, harga });
+    $("newMenuOwnerName").value = ""; $("newMenuOwnerHarga").value = "";
     $("settingMenuStatusMsg").textContent = "Menu ditambahkan ✓";
     $("settingMenuStatusMsg").className = "status ok";
     await loadOwnerInit();
