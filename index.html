@@ -199,6 +199,7 @@
   </div>
   <div class="tabs" id="procurementGroup" style="display:none;">
     <button class="tab-btn" data-screen="procurementScreen">Input</button>
+    <button class="tab-btn" data-screen="procurementInquiryScreen">Inquiry</button>
     <button class="tab-btn" data-screen="jenisProductScreen">Type</button>
     <button class="tab-btn" data-screen="kategoriProductScreen">Category</button>
   </div>
@@ -212,7 +213,8 @@
       <label for="penjualInput">Nama Penjual</label>
       <select id="penjualInput"><option value="">— Pilih —</option></select>
       <label for="customerInput">Nama Customer</label>
-      <input type="text" id="customerInput" placeholder="Contoh: Bu Sari" autocomplete="off">
+      <input type="text" id="customerInput" list="customerOptions" placeholder="Ketik atau pilih nama customer" autocomplete="off">
+      <datalist id="customerOptions"></datalist>
       <label>Tanggal</label>
       <div id="tanggalDisplay" style="padding:11px 12px; background:var(--paper-2); border:1.5px solid var(--line); border-radius:10px; font-size:15.5px; color:var(--ink-soft);"></div>
     </div>
@@ -274,7 +276,8 @@
       <label for="procTanggal">Tanggal Pembelian</label>
       <input type="date" id="procTanggal">
       <label for="procNama">Nama / Merk Product</label>
-      <input type="text" id="procNama" placeholder="Contoh: Credotti Kunafa" autocomplete="off">
+      <input type="text" id="procNama" list="namaProductOptions" placeholder="Ketik atau pilih nama/merk product" autocomplete="off">
+      <datalist id="namaProductOptions"></datalist>
       <label for="procJenis">Jenis Product</label>
       <select id="procJenis"><option value="">— Pilih —</option></select>
       <label for="procKategori">Kategori Product</label>
@@ -309,6 +312,18 @@
     </div>
     <button class="primary" id="submitProcurementBtn">Simpan Procurement</button>
     <p class="status" id="procurementStatusMsg"></p>
+  </section>
+
+  <!-- ===================== INQUIRY PROCUREMENT ===================== -->
+  <section class="screen" id="procurementInquiryScreen">
+    <p class="form-section-title" style="margin-top:0">Inquiry Procurement</p>
+    <div class="card" style="padding:10px 12px;">
+      <select id="procInquiryFilter" style="border:none; padding:6px;">
+        <option value="">Semua Kategori</option>
+      </select>
+    </div>
+    <div id="procurementInquiryList"></div>
+    <p class="status" id="procurementInquiryStatusMsg"></p>
   </section>
 
   <!-- ===================== JENIS PRODUCT ===================== -->
@@ -368,7 +383,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-03-owner-v7";
+const APP_VERSION = "2026-08-03-owner-v8";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -416,6 +431,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "belumDibayarScreen") loadBelumDibayar();
     if(btn.dataset.screen === "jenisProductScreen") renderJenisProductList();
     if(btn.dataset.screen === "kategoriProductScreen") renderKategoriProductList();
+    if(btn.dataset.screen === "procurementInquiryScreen") loadProcurementInquiry();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
   });
 });
@@ -464,6 +480,8 @@ async function loadOwnerInit(){
     jenisProductList = data.jenisProductList || [];
     kategoriProductList = data.kategoriProductList || [];
     if(data.kategoriSubkategoriMap) kategoriSubkategoriMap = data.kategoriSubkategoriMap;
+    $("customerOptions").innerHTML = (data.customerList || []).map(c => `<option value="${c}">`).join("");
+    $("namaProductOptions").innerHTML = (data.namaProductList || []).map(n => `<option value="${n}">`).join("");
     populateSubKategoriDropdown();
 
     const savedPenjual = localStorage.getItem("nama_penjual_owner") || "";
@@ -475,6 +493,8 @@ async function loadOwnerInit(){
     $("procJenis").innerHTML = '<option value="">— Pilih —</option>' +
       jenisProductList.map(j => `<option value="${j}">${j}</option>`).join("");
     $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
+      kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
+    $("procInquiryFilter").innerHTML = '<option value="">Semua Kategori</option>' +
       kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
 
     localStorage.setItem("menuOwner_cache", JSON.stringify(menuOwnerData));
@@ -705,6 +725,9 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
       $("penjualanStatusMsg").textContent = `Transaksi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
     }
     $("penjualanStatusMsg").className = "status ok";
+    if(customer && !$("customerOptions").innerHTML.includes(`value="${customer}"`)){
+      $("customerOptions").innerHTML += `<option value="${customer}">`;
+    }
     exitEditMode();
     // reset form utk transaksi berikutnya
     $("customerInput").value = "";
@@ -846,6 +869,9 @@ $("submitProcurementBtn").addEventListener("click", async () => {
     });
     $("procurementStatusMsg").textContent = "Procurement tersimpan ✓";
     $("procurementStatusMsg").className = "status ok";
+    if(!$("namaProductOptions").innerHTML.includes(`value="${namaProduct}"`)){
+      $("namaProductOptions").innerHTML += `<option value="${namaProduct}">`;
+    }
     $("procNama").value = ""; $("procTotalHarga").value = ""; $("procQty").value = "";
     $("procSatuanPurchase").value = ""; $("procKonversi").value = "1"; $("procSatuanStock").value = "";
     $("procJenis").value = ""; $("procKategori").value = "";
@@ -908,6 +934,56 @@ $("addJenisProductBtn").addEventListener("click", async () => {
 });
 
 // ---------- Kategori Product ----------
+// ---------- Inquiry Procurement ----------
+let allProcurementCache = [];
+async function loadProcurementInquiry(){
+  const container = $("procurementInquiryList");
+  container.innerHTML = '<p class="empty-note">Memuat...</p>';
+  try{
+    const data = await apiGet({ action: "listProcurementOwner" });
+    allProcurementCache = data.procurement || [];
+    applyProcInquiryFilter();
+    $("procurementInquiryStatusMsg").textContent = "";
+  }catch(e){
+    container.innerHTML = "";
+    $("procurementInquiryStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("procurementInquiryStatusMsg").className = "status err";
+  }
+}
+function applyProcInquiryFilter(){
+  const filter = $("procInquiryFilter").value;
+  const filtered = filter ? allProcurementCache.filter(p => p.kategoriProduct === filter) : allProcurementCache;
+  renderProcurementInquiry(filtered);
+}
+$("procInquiryFilter").addEventListener("change", applyProcInquiryFilter);
+function renderProcurementInquiry(list){
+  const container = $("procurementInquiryList");
+  if(!list.length){
+    container.innerHTML = '<p class="empty-note">Belum ada Procurement untuk filter ini.</p>';
+    return;
+  }
+  container.innerHTML = list.map(p => {
+    const tanggalStr = new Date(p.tanggalPembelian + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    return `
+      <div class="bill-item">
+        <div class="top">
+          <span class="customer">${p.namaProduct}</span>
+          <span class="tanggal">${tanggalStr}</span>
+        </div>
+        <div style="margin:4px 0;">
+          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:var(--maroon); padding:2px 8px; border-radius:8px;">${p.kategoriProduct}</span>
+          <span class="meta" style="margin-left:6px;">${p.jenisProduct}</span>
+        </div>
+        <div class="bottom">
+          <div>
+            <div class="rp">${formatRupiah(p.totalHarga)}</div>
+            <div class="meta">${p.quantity} ${p.satuanPurchase} → setara ${p.quantity * p.konversi} ${p.satuanStock}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
 function renderKategoriProductList(){
   const card = $("kategoriProductListCard");
   if(!kategoriProductList.length){ card.innerHTML = "<p>Belum ada Kategori Product.</p>"; return; }
