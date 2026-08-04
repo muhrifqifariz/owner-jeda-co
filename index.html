@@ -202,6 +202,7 @@
     <button class="tab-btn" data-screen="procurementInquiryScreen">Inquiry</button>
     <button class="tab-btn" data-screen="jenisProductScreen">Type</button>
     <button class="tab-btn" data-screen="kategoriProductScreen">Category</button>
+    <button class="tab-btn" data-screen="satuanOwnerScreen">Unit</button>
   </div>
 </header>
 
@@ -275,12 +276,16 @@
     <div class="card">
       <label for="procTanggal">Tanggal Pembelian</label>
       <input type="date" id="procTanggal">
+    </div>
+
+    <div class="card">
+      <p class="form-section-title" style="margin-top:0">Tambah Item Pembelian</p>
       <label for="procNama">Nama / Merk Product</label>
       <input type="text" id="procNama" list="namaProductOptions" placeholder="Ketik atau pilih nama/merk product" autocomplete="off">
       <datalist id="namaProductOptions"></datalist>
-      <label for="procJenis">Jenis Product</label>
+      <label for="procJenis">Type (Jenis Product)</label>
       <select id="procJenis"><option value="">— Pilih —</option></select>
-      <label for="procKategori">Kategori Product</label>
+      <label for="procKategori">Category (Kategori Product)</label>
       <select id="procKategori"><option value="">— Pilih —</option></select>
       <div class="row2">
         <div>
@@ -294,23 +299,27 @@
       </div>
       <div class="row2">
         <div>
-          <label for="procSatuanPurchase">Satuan Purchase (Unit)</label>
-          <input type="text" id="procSatuanPurchase" list="satuanOptions" placeholder="pcs / kg / set">
+          <label for="procSatuanPurchase">Unit Pertama (saat beli)</label>
+          <select id="procSatuanPurchase"><option value="">— Pilih —</option></select>
         </div>
         <div>
-          <label for="procKonversi">Konversi ke Stock</label>
+          <label for="procKonversi">Konversi ke Unit Kedua</label>
           <input type="number" id="procKonversi" inputmode="numeric" placeholder="1" min="0" value="1">
         </div>
       </div>
-      <label for="procSatuanStock">Satuan Stock (Unit)</label>
-      <input type="text" id="procSatuanStock" list="satuanOptions" placeholder="gr / pcs / ml">
-      <datalist id="satuanOptions">
-        <option value="pcs"><option value="kg"><option value="gr">
-        <option value="L"><option value="ml"><option value="set">
-        <option value="box"><option value="lembar"><option value="botol">
-      </datalist>
+      <label for="procSatuanStock">Unit Kedua (saat disimpan/stock)</label>
+      <select id="procSatuanStock"><option value="">— Pilih —</option></select>
+      <button type="button" class="secondary" id="addProcItemBtn" style="margin-top:14px;">+ Tambah ke Daftar</button>
+      <p class="status" id="procItemStatusMsg"></p>
     </div>
-    <button class="primary" id="submitProcurementBtn">Simpan Procurement</button>
+
+    <div class="receipt">
+      <h2>Daftar Item Akan Disimpan</h2>
+      <div id="procCartLines"><p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item ditambahkan</p></div>
+      <div class="receipt-line total"><span>Total Semua Item</span><span class="val" id="procCartGrandTotal">Rp0</span></div>
+    </div>
+
+    <button class="primary" id="submitProcurementBtn">Simpan Semua Procurement</button>
     <p class="status" id="procurementStatusMsg"></p>
   </section>
 
@@ -350,6 +359,18 @@
     <p class="status" id="kategoriProductStatusMsg"></p>
   </section>
 
+  <!-- ===================== SATUAN / UNIT ===================== -->
+  <section class="screen" id="satuanOwnerScreen">
+    <p class="form-section-title" style="margin-top:0">Unit (Satuan Purchase & Stock)</p>
+    <div class="card" id="satuanOwnerListCard"></div>
+    <div class="card">
+      <p class="form-section-title" style="margin-top:0">Tambah Unit Baru</p>
+      <input type="text" id="newSatuanOwnerInput" placeholder="Contoh: karung">
+      <button class="primary" id="addSatuanOwnerBtn" style="margin-bottom:16px;">Tambah</button>
+    </div>
+    <p class="status" id="satuanOwnerStatusMsg"></p>
+  </section>
+
   <!-- ===================== SETTING MENU ===================== -->
   <section class="screen" id="settingMenuScreen">
     <div class="card" id="menuOwnerManageCard"></div>
@@ -383,7 +404,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-03-owner-v8";
+const APP_VERSION = "2026-08-04-owner-v9";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -401,6 +422,8 @@ function groupLabel(kategori, sub){ return `${kategori} - ${sub}`; }
 let menuOwnerData = [];
 let jenisProductList = [];
 let kategoriProductList = [];
+let satuanList = [];
+let procCart = []; // array of {namaProduct, jenisProduct, kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock}
 let cart = {}; // { menuName: qty }
 let statusBayar = "Sudah Dibayar";
 let editingTransaksiId = null;
@@ -432,6 +455,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "jenisProductScreen") renderJenisProductList();
     if(btn.dataset.screen === "kategoriProductScreen") renderKategoriProductList();
     if(btn.dataset.screen === "procurementInquiryScreen") loadProcurementInquiry();
+    if(btn.dataset.screen === "satuanOwnerScreen") renderSatuanOwnerList();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
   });
 });
@@ -479,6 +503,7 @@ async function loadOwnerInit(){
     menuOwnerData = data.menuOwner || [];
     jenisProductList = data.jenisProductList || [];
     kategoriProductList = data.kategoriProductList || [];
+    satuanList = data.satuanList || [];
     if(data.kategoriSubkategoriMap) kategoriSubkategoriMap = data.kategoriSubkategoriMap;
     $("customerOptions").innerHTML = (data.customerList || []).map(c => `<option value="${c}">`).join("");
     $("namaProductOptions").innerHTML = (data.namaProductList || []).map(n => `<option value="${n}">`).join("");
@@ -496,6 +521,10 @@ async function loadOwnerInit(){
       kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
     $("procInquiryFilter").innerHTML = '<option value="">Semua Kategori</option>' +
       kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
+    $("procSatuanPurchase").innerHTML = '<option value="">— Pilih —</option>' +
+      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+    $("procSatuanStock").innerHTML = '<option value="">— Pilih —</option>' +
+      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
 
     localStorage.setItem("menuOwner_cache", JSON.stringify(menuOwnerData));
     localStorage.setItem("jenisProduct_cache", JSON.stringify(jenisProductList));
@@ -843,40 +872,81 @@ function renderBelumDibayar(list){
 
 // ---------- Procurement ----------
 attachRupiahInput($("procTotalHarga"));
-$("submitProcurementBtn").addEventListener("click", async () => {
-  const tanggalPembelian = $("procTanggal").value;
+
+function renderProcCart(){
+  const container = $("procCartLines");
+  if(!procCart.length){
+    container.innerHTML = '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item ditambahkan</p>';
+    $("procCartGrandTotal").textContent = "Rp0";
+    return;
+  }
+  let grandTotal = 0;
+  container.innerHTML = procCart.map((it, idx) => {
+    grandTotal += it.totalHarga;
+    return `
+      <div class="receipt-line" data-idx="${idx}">
+        <span>${it.namaProduct} — ${it.quantity} ${it.satuanPurchase} (${it.kategoriProduct})</span>
+        <span class="val">${formatRupiah(it.totalHarga)} <a href="#" class="removeProcItem" style="color:var(--danger); margin-left:8px;">✕</a></span>
+      </div>`;
+  }).join("");
+  $("procCartGrandTotal").textContent = formatRupiah(grandTotal);
+  container.querySelectorAll(".removeProcItem").forEach(link => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const idx = parseInt(e.target.closest("[data-idx]").dataset.idx, 10);
+      procCart.splice(idx, 1);
+      renderProcCart();
+    });
+  });
+}
+
+$("addProcItemBtn").addEventListener("click", () => {
   const namaProduct = $("procNama").value.trim();
   const jenisProduct = $("procJenis").value;
   const kategoriProduct = $("procKategori").value;
   const totalHarga = parseRupiahInput($("procTotalHarga"));
   const quantity = parseFloat($("procQty").value) || 0;
-  const satuanPurchase = $("procSatuanPurchase").value.trim();
+  const satuanPurchase = $("procSatuanPurchase").value;
   const konversi = parseFloat($("procKonversi").value) || 1;
-  const satuanStock = $("procSatuanStock").value.trim();
+  const satuanStock = $("procSatuanStock").value;
 
   if(!namaProduct || !jenisProduct || !kategoriProduct){
-    $("procurementStatusMsg").textContent = "Nama Product, Jenis Product, dan Kategori Product wajib diisi";
+    $("procItemStatusMsg").textContent = "Nama Product, Type, dan Category wajib diisi";
+    $("procItemStatusMsg").className = "status err";
+    return;
+  }
+  procCart.push({ namaProduct, jenisProduct, kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock });
+  if(!$("namaProductOptions").innerHTML.includes(`value="${namaProduct}"`)){
+    $("namaProductOptions").innerHTML += `<option value="${namaProduct}">`;
+  }
+  renderProcCart();
+  $("procItemStatusMsg").textContent = "Ditambahkan ke daftar ✓";
+  $("procItemStatusMsg").className = "status ok";
+  // reset form item, siap isi item berikutnya (Tanggal tetap sama)
+  $("procNama").value = ""; $("procTotalHarga").value = ""; $("procQty").value = "";
+  $("procSatuanPurchase").value = ""; $("procKonversi").value = "1"; $("procSatuanStock").value = "";
+  $("procJenis").value = ""; $("procKategori").value = "";
+  $("procNama").focus();
+});
+
+$("submitProcurementBtn").addEventListener("click", async () => {
+  const tanggalPembelian = $("procTanggal").value;
+  if(!procCart.length){
+    $("procurementStatusMsg").textContent = "Tambahkan minimal 1 item ke daftar dulu";
     $("procurementStatusMsg").className = "status err";
     return;
   }
   $("submitProcurementBtn").disabled = true;
-  $("procurementStatusMsg").textContent = "Menyimpan...";
+  $("procurementStatusMsg").textContent = "Menyimpan " + procCart.length + " item...";
   $("procurementStatusMsg").className = "status";
   try{
-    await apiPost({
-      action: "submitProcurement", tanggalPembelian, namaProduct, jenisProduct,
-      kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock
-    });
-    $("procurementStatusMsg").textContent = "Procurement tersimpan ✓";
+    const result = await apiPost({ action: "submitProcurement", tanggalPembelian, items: procCart });
+    $("procurementStatusMsg").textContent = `${result.jumlahItem} item Procurement tersimpan ✓`;
     $("procurementStatusMsg").className = "status ok";
-    if(!$("namaProductOptions").innerHTML.includes(`value="${namaProduct}"`)){
-      $("namaProductOptions").innerHTML += `<option value="${namaProduct}">`;
-    }
-    $("procNama").value = ""; $("procTotalHarga").value = ""; $("procQty").value = "";
-    $("procSatuanPurchase").value = ""; $("procKonversi").value = "1"; $("procSatuanStock").value = "";
-    $("procJenis").value = ""; $("procKategori").value = "";
+    procCart = [];
+    renderProcCart();
   }catch(e){
-    $("procurementStatusMsg").textContent = "GAGAL menyimpan: " + e.message;
+    $("procurementStatusMsg").textContent = "GAGAL menyimpan: " + e.message + ". Daftar item TETAP tersimpan lokal, coba tekan lagi.";
     $("procurementStatusMsg").className = "status err";
   }finally{
     $("submitProcurementBtn").disabled = false;
@@ -1030,6 +1100,60 @@ $("addKategoriProductBtn").addEventListener("click", async () => {
   }catch(e){
     $("kategoriProductStatusMsg").textContent = "Gagal menyimpan: " + e.message;
     $("kategoriProductStatusMsg").className = "status err";
+  }
+});
+
+// ---------- Satuan / Unit ----------
+function renderSatuanOwnerList(){
+  const card = $("satuanOwnerListCard");
+  if(!satuanList.length){ card.innerHTML = "<p>Belum ada Unit.</p>"; return; }
+  card.innerHTML = satuanList.map(s => `
+    <div class="list-manage-item" data-nama="${s}">
+      <div class="list-manage-info"><div class="list-manage-name">${s}</div></div>
+      <button class="icon-btn del">Hapus</button>
+    </div>`).join("");
+  card.querySelectorAll(".list-manage-item").forEach(row => {
+    row.querySelector(".del").addEventListener("click", async () => {
+      const nama = row.dataset.nama;
+      if(!confirm(`Hapus "${nama}" dari daftar Unit?`)) return;
+      try{
+        await apiPost({ action: "deleteSatuanOwner", nama });
+        satuanList = satuanList.filter(s => s !== nama);
+        $("procSatuanPurchase").innerHTML = '<option value="">— Pilih —</option>' +
+          satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+        $("procSatuanStock").innerHTML = '<option value="">— Pilih —</option>' +
+          satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+        renderSatuanOwnerList();
+      }catch(e){
+        $("satuanOwnerStatusMsg").textContent = "Gagal menghapus: " + e.message;
+        $("satuanOwnerStatusMsg").className = "status err";
+      }
+    });
+  });
+}
+$("addSatuanOwnerBtn").addEventListener("click", async () => {
+  const nama = $("newSatuanOwnerInput").value.trim();
+  if(!nama){
+    $("satuanOwnerStatusMsg").textContent = "Nama Unit wajib diisi";
+    $("satuanOwnerStatusMsg").className = "status err";
+    return;
+  }
+  $("satuanOwnerStatusMsg").textContent = "Menyimpan...";
+  $("satuanOwnerStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "addSatuanOwner", nama });
+    satuanList.push(nama);
+    $("procSatuanPurchase").innerHTML = '<option value="">— Pilih —</option>' +
+      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+    $("procSatuanStock").innerHTML = '<option value="">— Pilih —</option>' +
+      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+    $("newSatuanOwnerInput").value = "";
+    $("satuanOwnerStatusMsg").textContent = "Ditambahkan ✓";
+    $("satuanOwnerStatusMsg").className = "status ok";
+    renderSatuanOwnerList();
+  }catch(e){
+    $("satuanOwnerStatusMsg").textContent = "Gagal menyimpan: " + e.message;
+    $("satuanOwnerStatusMsg").className = "status err";
   }
 });
 
