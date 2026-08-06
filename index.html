@@ -140,8 +140,14 @@
   }
   .receipt h2{
     font-family:Georgia, serif; font-size:13px; letter-spacing:.1em;
-    text-transform:uppercase; margin:0 0 10px; color:var(--ink-soft);
+    text-transform:uppercase; margin:0 0 2px; color:var(--ink-soft);
   }
+  .receipt-header{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    margin-bottom:12px; padding-bottom:10px; border-bottom:1px dashed var(--line);
+  }
+  .receipt-logo{ height:38px; width:auto; border-radius:8px; flex-shrink:0; }
+  .receipt-meta{ font-size:12px; color:var(--ink-soft); }
   .receipt-line{ display:flex; justify-content:space-between; font-size:14px; padding:5px 0; }
   .receipt-line.total{
     border-top:1px dashed var(--line); margin-top:6px; padding-top:10px;
@@ -225,7 +231,14 @@
     </div>
 
     <div class="receipt">
-      <h2>Ringkasan Transaksi</h2>
+      <div class="receipt-header">
+        <div>
+          <h2 style="margin-bottom:2px;">Nota Penjualan</h2>
+          <div class="receipt-meta" id="receiptCustomerLine">Customer: —</div>
+          <div class="receipt-meta" id="receiptTanggalLine"></div>
+        </div>
+        <img src="icon-192.png" alt="Jeda" class="receipt-logo">
+      </div>
       <div id="cartSummaryLines"></div>
       <div class="receipt-line"><span>Subtotal</span><span class="val" id="cartSubtotal">Rp0</span></div>
       <div class="receipt-line total"><span>Grand Total</span><span class="val" id="cartGrandTotal">Rp0</span></div>
@@ -404,7 +417,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-04-owner-v9";
+const APP_VERSION = "2026-08-04-owner-v11";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -641,7 +654,11 @@ function updateCartSummary(){
   const grandTotal = Math.max(0, subtotal - discount);
   $("cartSubtotal").textContent = formatRupiah(subtotal);
   $("cartGrandTotal").textContent = formatRupiah(grandTotal);
+  const customerName = $("customerInput").value.trim();
+  $("receiptCustomerLine").textContent = "Customer: " + (customerName || "—");
+  $("receiptTanggalLine").textContent = "Tanggal: " + new Date().toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
 }
+$("customerInput").addEventListener("input", updateCartSummary);
 attachRupiahInput($("discountInput"));
 $("discountInput").addEventListener("input", updateCartSummary);
 // ---------- Status bayar toggle ----------
