@@ -148,6 +148,10 @@
   }
   .receipt-logo{ height:38px; width:auto; border-radius:8px; flex-shrink:0; }
   .receipt-meta{ font-size:12px; color:var(--ink-soft); }
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; color:var(--maroon-dark);
+    font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:12px; background:none; border:none;
+  }
   .receipt-line{ display:flex; justify-content:space-between; font-size:14px; padding:5px 0; }
   .receipt-line.total{
     border-top:1px dashed var(--line); margin-top:6px; padding-top:10px;
@@ -284,6 +288,39 @@
     <p class="status" id="belumDibayarStatusMsg"></p>
   </section>
 
+  <!-- ===================== INVOICE / NOTA PENJUALAN ===================== -->
+  <section class="screen" id="invoiceScreen">
+    <button class="back-link" id="backToInquiryBtn">← Kembali ke Inquiry</button>
+
+    <div class="receipt">
+      <div class="receipt-header">
+        <div>
+          <h2 style="margin-bottom:2px;">Nota Penjualan</h2>
+          <div class="receipt-meta" id="invoiceCustomerLine">Customer: —</div>
+          <div class="receipt-meta" id="invoiceTanggalLine"></div>
+        </div>
+        <img src="icon-192.png" alt="Jeda" class="receipt-logo">
+      </div>
+      <div id="invoiceLines"></div>
+      <div class="receipt-line"><span>Subtotal</span><span class="val" id="invoiceSubtotal">Rp0</span></div>
+      <div class="receipt-line" id="invoiceDiscountLine" style="display:none;"><span>Diskon</span><span class="val" id="invoiceDiscount">Rp0</span></div>
+      <div class="receipt-line total"><span>Grand Total</span><span class="val" id="invoiceGrandTotal">Rp0</span></div>
+      <p id="invoiceKeteranganLine" style="font-style:italic; font-size:12.5px; color:var(--ink-soft); margin:10px 0 0; display:none;"></p>
+    </div>
+
+    <div class="card">
+      <label style="margin:0 0 8px;">Status Bayar</label>
+      <div class="paystatus-toggle">
+        <button type="button" class="paystatus-btn" id="invBtnPaid">✓ Sudah Dibayar</button>
+        <button type="button" class="paystatus-btn" id="invBtnUnpaid">Belum Dibayar</button>
+        <button type="button" class="paystatus-btn" id="invBtnPO">PO</button>
+      </div>
+    </div>
+
+    <button class="secondary" id="editInvoiceBtn" style="display:none;">Edit Transaksi Ini</button>
+    <p class="status" id="invoiceStatusMsg"></p>
+  </section>
+
   <!-- ===================== PROCUREMENT ===================== -->
   <section class="screen" id="procurementScreen">
     <div class="card">
@@ -417,7 +454,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-04-owner-v11";
+const APP_VERSION = "2026-08-06-owner-v12";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -693,6 +730,84 @@ $("cancelEditBtn").addEventListener("click", (e) => {
   updateCartSummary();
   $("btnPaid").click();
 });
+// ---------- Invoice / Nota Penjualan (buka dari tap kartu di Inquiry) ----------
+let currentInvoiceId = null;
+async function openInvoice(transaksiId){
+  currentInvoiceId = transaksiId;
+  showScreen("invoiceScreen");
+  $("invoiceStatusMsg").textContent = "Memuat...";
+  $("invoiceStatusMsg").className = "status";
+  try{
+    const detail = await apiPost({ action: "getTransaksiOwnerDetail", transaksiId });
+    const tanggalStr = new Date(detail.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+    $("invoiceCustomerLine").textContent = "Customer: " + (detail.customer || "—");
+    $("invoiceTanggalLine").textContent = "Tanggal: " + tanggalStr;
+
+    let subtotal = 0;
+    $("invoiceLines").innerHTML = detail.items.map(it => {
+      const lineTotal = it.qty * it.harga;
+      subtotal += lineTotal;
+      return `<div class="receipt-line"><span>${it.menu} × ${it.qty}</span><span class="val">${formatRupiah(lineTotal)}</span></div>`;
+    }).join("");
+    $("invoiceSubtotal").textContent = formatRupiah(subtotal);
+    const grandTotal = Math.max(0, subtotal - (detail.discount || 0));
+    $("invoiceGrandTotal").textContent = formatRupiah(grandTotal);
+    if(detail.discount > 0){
+      $("invoiceDiscountLine").style.display = "flex";
+      $("invoiceDiscount").textContent = "-" + formatRupiah(detail.discount);
+    } else {
+      $("invoiceDiscountLine").style.display = "none";
+    }
+    if(detail.keterangan){
+      $("invoiceKeteranganLine").style.display = "block";
+      $("invoiceKeteranganLine").textContent = `Keterangan: "${detail.keterangan}"`;
+    } else {
+      $("invoiceKeteranganLine").style.display = "none";
+    }
+
+    setInvoiceStatusButtons(detail.statusBayar);
+    $("editInvoiceBtn").style.display = detail.statusBayar === "PO" ? "block" : "none";
+    $("invoiceStatusMsg").textContent = "";
+  }catch(e){
+    $("invoiceStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("invoiceStatusMsg").className = "status err";
+  }
+}
+function setInvoiceStatusButtons(status){
+  const map = { "Sudah Dibayar": "invBtnPaid", "Belum Dibayar": "invBtnUnpaid", "PO": "invBtnPO" };
+  ["invBtnPaid", "invBtnUnpaid", "invBtnPO"].forEach(id => {
+    $(id).classList.remove("active", "paid", "unpaid", "order");
+  });
+  const activeId = map[status];
+  if(activeId){
+    const cls = status === "Sudah Dibayar" ? "paid" : (status === "Belum Dibayar" ? "unpaid" : "order");
+    $(activeId).classList.add("active", cls);
+  }
+}
+async function changeInvoiceStatus(newStatus){
+  if(!currentInvoiceId) return;
+  $("invoiceStatusMsg").textContent = "Menyimpan...";
+  $("invoiceStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "updateStatusBayar", transaksiId: currentInvoiceId, statusBayar: newStatus });
+    setInvoiceStatusButtons(newStatus);
+    $("editInvoiceBtn").style.display = newStatus === "PO" ? "block" : "none";
+    $("invoiceStatusMsg").textContent = "Status diperbarui ✓";
+    $("invoiceStatusMsg").className = "status ok";
+  }catch(e){
+    $("invoiceStatusMsg").textContent = "Gagal menyimpan: " + e.message;
+    $("invoiceStatusMsg").className = "status err";
+  }
+}
+$("invBtnPaid").addEventListener("click", () => changeInvoiceStatus("Sudah Dibayar"));
+$("invBtnUnpaid").addEventListener("click", () => changeInvoiceStatus("Belum Dibayar"));
+$("invBtnPO").addEventListener("click", () => changeInvoiceStatus("PO"));
+$("editInvoiceBtn").addEventListener("click", () => enterEditMode(currentInvoiceId));
+$("backToInquiryBtn").addEventListener("click", () => {
+  showScreen("belumDibayarScreen");
+  loadBelumDibayar();
+});
+
 async function enterEditMode(transaksiId){
   $("belumDibayarStatusMsg").textContent = "Memuat data transaksi...";
   $("belumDibayarStatusMsg").className = "status";
@@ -826,7 +941,7 @@ function renderBelumDibayar(list){
     const badgeColor = badgeColors[t.status] || "var(--ink-soft)";
     const statusLabel = t.status === "Sudah Dibayar" ? "Sudah Lunas" : (t.status === "Belum Dibayar" ? "Belum Lunas" : t.status);
     return `
-      <div class="bill-item" data-id="${t.idTransaksi}">
+      <div class="bill-item" data-id="${t.idTransaksi}" style="cursor:pointer;">
         <div class="top">
           <span class="customer">${t.customer || "(tanpa nama)"}</span>
           <span class="tanggal">${tanggalStr}</span>
@@ -848,14 +963,19 @@ function renderBelumDibayar(list){
         </div>
       </div>`;
   }).join("");
+  container.querySelectorAll(".bill-item").forEach(row => {
+    row.addEventListener("click", () => openInvoice(row.dataset.id));
+  });
   container.querySelectorAll(".editPoBtn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
       const row = btn.closest(".bill-item");
       enterEditMode(row.dataset.id);
     });
   });
   container.querySelectorAll(".markDeliveredBtn").forEach(btn => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
       const row = btn.closest(".bill-item");
       const id = row.dataset.id;
       btn.disabled = true;
@@ -868,7 +988,8 @@ function renderBelumDibayar(list){
     });
   });
   container.querySelectorAll(".markPaidBtn").forEach(btn => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
       const row = btn.closest(".bill-item");
       const id = row.dataset.id;
       btn.disabled = true;
