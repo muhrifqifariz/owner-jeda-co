@@ -107,6 +107,12 @@
   .menu-item:first-child{ border-top:none; }
   .menu-item-name{ font-size:15px; font-weight:600; margin-bottom:2px; }
   .menu-item-harga{ font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; }
+  .price-toggle{ display:flex; gap:6px; margin-bottom:8px; }
+  .price-btn{
+    flex:1; padding:6px 4px; border-radius:8px; border:1.5px solid var(--line);
+    background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:12.5px; cursor:pointer;
+  }
+  .price-btn.active{ background:var(--maroon); border-color:var(--maroon); color:#fff; }
   .stepper{ display:flex; align-items:stretch; gap:8px; }
   .stepper input{
     text-align:center; font-size:18px; font-weight:700;
@@ -226,8 +232,8 @@
       <label for="customerInput">Nama Customer</label>
       <input type="text" id="customerInput" list="customerOptions" placeholder="Ketik atau pilih nama customer" autocomplete="off">
       <datalist id="customerOptions"></datalist>
-      <label>Tanggal</label>
-      <div id="tanggalDisplay" style="padding:11px 12px; background:var(--paper-2); border:1.5px solid var(--line); border-radius:10px; font-size:15.5px; color:var(--ink-soft);"></div>
+      <label for="tanggalInputOwner">Tanggal</label>
+      <input type="date" id="tanggalInputOwner">
     </div>
 
     <div class="card" id="menuOwnerListCard">
@@ -249,7 +255,8 @@
     </div>
 
     <div class="card">
-      <label for="discountInput">Diskon (Rp)</label>
+      <label for="discountInput">Diskon Tambahan / Umum (Rp)</label>
+      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 8px;">Dibagi rata proporsional ke semua item sesuai nilainya. Untuk diskon khusus 1 produk, isi di kolom "Diskon item ini" pada produknya langsung.</p>
       <input type="text" id="discountInput" inputmode="numeric" placeholder="Rp0">
       <label for="keteranganInput">Keterangan (request khusus)</label>
       <input type="text" id="keteranganInput" placeholder="Contoh: less sugar, no sugar, extra ice">
@@ -438,8 +445,16 @@
           <select id="newMenuOwnerSub"></select>
         </div>
       </div>
-      <label for="newMenuOwnerHarga">Harga (Rp)</label>
-      <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
+      <div class="row2">
+        <div>
+          <label for="newMenuOwnerHarga">Harga Outlet (Rp)</label>
+          <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
+        </div>
+        <div>
+          <label for="newMenuOwnerHargaSpecial">Harga Special (Rp)</label>
+          <input type="text" id="newMenuOwnerHargaSpecial" inputmode="numeric" placeholder="Rp0">
+        </div>
+      </div>
       <button class="primary" id="addMenuOwnerBtn" style="margin-bottom:16px;">Tambah Menu</button>
     </div>
     <p class="status" id="settingMenuStatusMsg"></p>
@@ -454,7 +469,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-06-owner-v12";
+const APP_VERSION = "2026-08-18-tanggalinput-v1";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -522,10 +537,11 @@ document.querySelectorAll(".group-btn").forEach(btn => {
 
 function setTanggalHariIni(){
   const today = new Date();
-  $("tanggalDisplay").textContent = today.toLocaleDateString("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  if(!$("tanggalInputOwner").value) $("tanggalInputOwner").value = localDateStr(today);
   if(!$("procTanggal").value) $("procTanggal").value = localDateStr(today);
 }
 setTanggalHariIni();
+$("tanggalInputOwner").addEventListener("change", updateCartSummary);
 
 async function apiGet(params){
   const qs = new URLSearchParams(params || {}).toString();
@@ -624,14 +640,21 @@ function renderMenuOwnerList(){
         <div class="menu-group-items">`;
     items.forEach(m => {
       html += `
-        <div class="menu-item" data-menu="${m.menu}" data-kategori="${m.kategori}" data-harga="${m.harga}" data-satuan="${m.satuan}">
+        <div class="menu-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
+             data-harga="${m.harga}" data-hargaspecial="${m.hargaSpecial}" data-satuan="${m.satuan}" data-tier="outlet">
           <div class="menu-item-name">${m.menu}</div>
-          <div class="menu-item-harga">${formatRupiah(m.harga)} / ${m.satuan}</div>
+          <div class="menu-item-harga">Outlet ${formatRupiah(m.harga)} · Special ${formatRupiah(m.hargaSpecial)} / ${m.satuan}</div>
+          <div class="price-toggle">
+            <button type="button" class="price-btn active" data-tier="outlet">Outlet</button>
+            <button type="button" class="price-btn" data-tier="special">Special</button>
+          </div>
           <div class="stepper">
             <button type="button" class="step-btn minus">−</button>
             <input type="number" class="qty" inputmode="numeric" value="0" min="0">
             <button type="button" class="step-btn plus">+</button>
           </div>
+          <label style="margin:8px 0 4px; font-size:11.5px;">Diskon item ini (Rp)</label>
+          <input type="text" class="itemDiskon" inputmode="numeric" placeholder="Rp0">
           <div class="menu-item-calc">Subtotal: <span class="val subtotal" style="margin-left:4px;">Rp0</span></div>
         </div>`;
     });
@@ -652,16 +675,20 @@ function renderMenuOwnerList(){
   card.querySelectorAll(".menu-item").forEach(item => {
     const qtyInput = item.querySelector(".qty");
     const subtotalEl = item.querySelector(".subtotal");
-    const harga = parseFloat(item.dataset.harga) || 0;
+    const diskonInput = item.querySelector(".itemDiskon");
     const menu = item.dataset.menu;
+    attachRupiahInput(diskonInput);
     function recalc(){
       const qty = Math.max(0, parseFloat(qtyInput.value) || 0);
       qtyInput.value = qty;
-      subtotalEl.textContent = formatRupiah(qty * harga);
+      const itemDiskon = parseRupiahInput(diskonInput);
+      const subtotalKotor = qty * getItemHarga(item);
+      subtotalEl.textContent = formatRupiah(Math.max(0, subtotalKotor - itemDiskon));
       if(qty > 0) cart[menu] = qty; else delete cart[menu];
       updateCartSummary();
     }
     qtyInput.addEventListener("input", recalc);
+    diskonInput.addEventListener("input", recalc);
     item.querySelector(".step-btn.plus").addEventListener("click", () => {
       qtyInput.value = (parseFloat(qtyInput.value) || 0) + 1;
       recalc();
@@ -670,30 +697,74 @@ function renderMenuOwnerList(){
       qtyInput.value = Math.max(0, (parseFloat(qtyInput.value) || 0) - 1);
       recalc();
     });
+    item.querySelectorAll(".price-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        item.dataset.tier = btn.dataset.tier;
+        item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === btn.dataset.tier));
+        recalc();
+      });
+    });
   });
   updateCartSummary();
 }
+function getItemHarga(item){
+  return item.dataset.tier === "special"
+    ? (parseFloat(item.dataset.hargaspecial) || 0)
+    : (parseFloat(item.dataset.harga) || 0);
+}
 
-function updateCartSummary(){
-  let subtotal = 0;
-  const lines = [];
+function collectCartItems(){
+  const items = [];
   document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
     const menu = item.dataset.menu;
     const qty = cart[menu] || 0;
     if(qty <= 0) return;
-    const harga = parseFloat(item.dataset.harga) || 0;
-    const itemTotal = qty * harga;
+    items.push({
+      menu, kategori: item.dataset.kategori, harga: getItemHarga(item), qty,
+      manualDiskon: parseRupiahInput(item.querySelector(".itemDiskon")),
+      tier: item.dataset.tier
+    });
+  });
+  return items;
+}
+// Cermin dari distribusiDiskonProporsional() di server -- dipakai utk
+// live preview di HP, angka final tetap dihitung ulang otoritatif di server.
+function hitungDiskonProporsional(items, diskonTambahan){
+  const subtotal = items.reduce((s, it) => s + it.harga * it.qty, 0);
+  let sumShare = 0;
+  const withShare = items.map(it => {
+    const itemTotal = it.harga * it.qty;
+    const share = subtotal > 0 ? Math.round(diskonTambahan * itemTotal / subtotal) : 0;
+    sumShare += share;
+    return Object.assign({}, it, { _share: share });
+  });
+  const diff = diskonTambahan - sumShare;
+  if(withShare.length) withShare[withShare.length - 1]._share += diff;
+  return withShare.map(it => Object.assign({}, it, { diskonFinal: (it.manualDiskon || 0) + it._share }));
+}
+
+function updateCartSummary(){
+  const cartItems = collectCartItems();
+  const discountTambahan = parseRupiahInput($("discountInput"));
+  const itemsWithDiskon = hitungDiskonProporsional(cartItems, discountTambahan);
+
+  let subtotal = 0, totalDiskon = 0;
+  const lines = itemsWithDiskon.map(it => {
+    const itemTotal = it.harga * it.qty;
     subtotal += itemTotal;
-    lines.push(`<div class="receipt-line"><span>${menu} × ${qty}</span><span class="val">${formatRupiah(itemTotal)}</span></div>`);
+    totalDiskon += it.diskonFinal;
+    const tierLabel = it.tier === "special" ? " (Special)" : "";
+    const diskonNote = it.diskonFinal > 0 ? ` − diskon ${formatRupiah(it.diskonFinal)}` : "";
+    return `<div class="receipt-line"><span>${it.menu}${tierLabel} × ${it.qty}${diskonNote}</span><span class="val">${formatRupiah(Math.max(0, itemTotal - it.diskonFinal))}</span></div>`;
   });
   $("cartSummaryLines").innerHTML = lines.join("") || '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item dipilih</p>';
-  const discount = parseRupiahInput($("discountInput"));
-  const grandTotal = Math.max(0, subtotal - discount);
+  const grandTotal = Math.max(0, subtotal - totalDiskon);
   $("cartSubtotal").textContent = formatRupiah(subtotal);
   $("cartGrandTotal").textContent = formatRupiah(grandTotal);
   const customerName = $("customerInput").value.trim();
   $("receiptCustomerLine").textContent = "Customer: " + (customerName || "—");
-  $("receiptTanggalLine").textContent = "Tanggal: " + new Date().toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+  const tanggalPilihan = $("tanggalInputOwner").value ? new Date($("tanggalInputOwner").value + "T00:00:00") : new Date();
+  $("receiptTanggalLine").textContent = "Tanggal: " + tanggalPilihan.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
 }
 $("customerInput").addEventListener("input", updateCartSummary);
 attachRupiahInput($("discountInput"));
@@ -724,9 +795,15 @@ $("cancelEditBtn").addEventListener("click", (e) => {
   $("customerInput").value = "";
   $("discountInput").value = "";
   $("keteranganInput").value = "";
+  $("tanggalInputOwner").value = localDateStr(new Date());
   cart = {};
   document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
   document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
+    document.querySelectorAll("#menuOwnerListCard .itemDiskon").forEach(el => el.value = "");
+  document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
+    item.dataset.tier = "outlet";
+    item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "outlet"));
+  });
   updateCartSummary();
   $("btnPaid").click();
 });
@@ -816,16 +893,26 @@ async function enterEditMode(transaksiId){
     editingTransaksiId = transaksiId;
     $("penjualInput").value = detail.penjual;
     $("customerInput").value = detail.customer || "";
-    $("discountInput").value = detail.discount ? "Rp" + Number(detail.discount).toLocaleString("id-ID") : "";
+    $("tanggalInputOwner").value = detail.tanggal || localDateStr(new Date());
+    $("discountInput").value = ""; // diskon lama sudah tercatat per item di bawah, jangan dobel
     $("keteranganInput").value = detail.keterangan || "";
     cart = {};
-    detail.items.forEach(it => { cart[it.menu] = it.qty; });
+    const hargaByMenu = {}, diskonByMenu = {};
+    detail.items.forEach(it => { cart[it.menu] = it.qty; hargaByMenu[it.menu] = it.harga; diskonByMenu[it.menu] = it.diskon || 0; });
     document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
       const menu = item.dataset.menu;
       const qty = cart[menu] || 0;
       const qtyInput = item.querySelector(".qty");
       qtyInput.value = qty;
-      item.querySelector(".subtotal").textContent = formatRupiah(qty * (parseFloat(item.dataset.harga) || 0));
+      const diskonInput = item.querySelector(".itemDiskon");
+      const diskonVal = diskonByMenu[menu] || 0;
+      diskonInput.value = diskonVal ? "Rp" + Number(diskonVal).toLocaleString("id-ID") : "";
+      // Tebak tier dari harga yg tersimpan: kalau cocok Harga Special, pilih Special; selain itu default Outlet
+      const storedHarga = hargaByMenu[menu];
+      const tier = (storedHarga !== undefined && storedHarga === parseFloat(item.dataset.hargaspecial)) ? "special" : "outlet";
+      item.dataset.tier = tier;
+      item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === tier));
+      item.querySelector(".subtotal").textContent = formatRupiah(Math.max(0, qty * getItemHarga(item) - diskonVal));
     });
     updateCartSummary();
     setStatusBayar(detail.statusBayar || "Belum Dibayar");
@@ -849,16 +936,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
     $("penjualanStatusMsg").className = "status err";
     return;
   }
-  const items = [];
-  document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-    const menu = item.dataset.menu;
-    const qty = cart[menu] || 0;
-    if(qty <= 0) return;
-    items.push({
-      menu, kategori: item.dataset.kategori,
-      harga: parseFloat(item.dataset.harga) || 0, qty
-    });
-  });
+  const items = collectCartItems();
   if(!items.length){
     $("penjualanStatusMsg").textContent = "Pilih minimal 1 menu";
     $("penjualanStatusMsg").className = "status err";
@@ -871,7 +949,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
   $("penjualanStatusMsg").className = "status";
   try{
     const payload = {
-      penjual, customer, tanggal: localDateStr(new Date()), items, statusBayar, discount, keterangan
+      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, keterangan
     };
     let result;
     if(editingTransaksiId){
@@ -897,6 +975,11 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
     cart = {};
     document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
     document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
+    document.querySelectorAll("#menuOwnerListCard .itemDiskon").forEach(el => el.value = "");
+    document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
+      item.dataset.tier = "outlet";
+      item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "outlet"));
+    });
     updateCartSummary();
     $("btnPaid").click();
   }catch(e){
@@ -1303,10 +1386,10 @@ function renderMenuOwnerManage(){
     const subLabel = groupLabel(m.kategori, m.subKategori || "");
     return `
     <div class="list-manage-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
-         data-sub="${m.subKategori || ''}" data-harga="${m.harga}" data-satuan="${m.satuan}">
+         data-sub="${m.subKategori || ''}" data-harga="${m.harga}" data-hargaspecial="${m.hargaSpecial}" data-satuan="${m.satuan}">
       <div class="list-manage-info">
         <div class="list-manage-name">${m.menu}</div>
-        <div class="list-manage-sub">${subLabel} · ${formatRupiah(m.harga)}</div>
+        <div class="list-manage-sub">${subLabel} · Outlet ${formatRupiah(m.harga)} · Special ${formatRupiah(m.hargaSpecial)}</div>
       </div>
       <button class="icon-btn edit">Edit</button>
       <button class="icon-btn del">Hapus</button>
@@ -1325,15 +1408,17 @@ async function editMenuOwner(current){
   const subsForKat = kategoriSubkategoriMap[kategoriBaru.trim()] || [];
   const subBaru = prompt("Sub kategori (ketik persis): " + subsForKat.join(" / "), current.sub || subsForKat[0]);
   if(subBaru === null) return;
-  const hargaBaru = prompt("Harga (Rp):", current.harga);
+  const hargaBaru = prompt("Harga Outlet (Rp):", current.harga);
   if(hargaBaru === null) return;
+  const hargaSpecialBaru = prompt("Harga Special (Rp):", current.hargaspecial || current.harga);
+  if(hargaSpecialBaru === null) return;
   $("settingMenuStatusMsg").textContent = "Menyimpan...";
   $("settingMenuStatusMsg").className = "status";
   try{
     await apiPost({
       action: "updateMenuOwner", oldMenu: current.menu,
       menu: namaBaru.trim(), kategori: kategoriBaru.trim(), subKategori: subBaru.trim(),
-      harga: parseFloat(hargaBaru) || 0
+      harga: parseFloat(hargaBaru) || 0, hargaSpecial: parseFloat(hargaSpecialBaru) || 0
     });
     $("settingMenuStatusMsg").textContent = "Menu diperbarui ✓";
     $("settingMenuStatusMsg").className = "status ok";
@@ -1360,11 +1445,13 @@ async function deleteMenuOwner(nama){
   }
 }
 attachRupiahInput($("newMenuOwnerHarga"));
+attachRupiahInput($("newMenuOwnerHargaSpecial"));
 $("addMenuOwnerBtn").addEventListener("click", async () => {
   const menu = $("newMenuOwnerName").value.trim();
   const kategori = $("newMenuOwnerKategori").value;
   const subKategori = $("newMenuOwnerSub").value;
   const harga = parseRupiahInput($("newMenuOwnerHarga"));
+  const hargaSpecial = parseRupiahInput($("newMenuOwnerHargaSpecial")) || harga;
   if(!menu){
     $("settingMenuStatusMsg").textContent = "Nama menu wajib diisi";
     $("settingMenuStatusMsg").className = "status err";
@@ -1373,8 +1460,8 @@ $("addMenuOwnerBtn").addEventListener("click", async () => {
   $("settingMenuStatusMsg").textContent = "Menyimpan...";
   $("settingMenuStatusMsg").className = "status";
   try{
-    await apiPost({ action: "addMenuOwner", menu, kategori, subKategori, harga });
-    $("newMenuOwnerName").value = ""; $("newMenuOwnerHarga").value = "";
+    await apiPost({ action: "addMenuOwner", menu, kategori, subKategori, harga, hargaSpecial });
+    $("newMenuOwnerName").value = ""; $("newMenuOwnerHarga").value = ""; $("newMenuOwnerHargaSpecial").value = "";
     $("settingMenuStatusMsg").textContent = "Menu ditambahkan ✓";
     $("settingMenuStatusMsg").className = "status ok";
     await loadOwnerInit();
