@@ -251,6 +251,7 @@
       </div>
       <div id="cartSummaryLines"></div>
       <div class="receipt-line"><span>Subtotal</span><span class="val" id="cartSubtotal">Rp0</span></div>
+      <div class="receipt-line" id="cartOngkirLine" style="display:none;"><span>Ongkir / Add-ons</span><span class="val" id="cartOngkir">+Rp0</span></div>
       <div class="receipt-line total"><span>Grand Total</span><span class="val" id="cartGrandTotal">Rp0</span></div>
     </div>
 
@@ -258,6 +259,9 @@
       <label for="discountInput">Diskon Tambahan / Umum (Rp)</label>
       <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 8px;">Dibagi rata proporsional ke semua item sesuai nilainya. Untuk diskon khusus 1 produk, isi di kolom "Diskon item ini" pada produknya langsung.</p>
       <input type="text" id="discountInput" inputmode="numeric" placeholder="Rp0">
+      <label for="ongkirInput">Ongkir / Add-ons (Rp)</label>
+      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 8px;">Biaya tambahan (ongkir, packaging, dll) — ditambahkan ke Grand Total, tidak kena diskon.</p>
+      <input type="text" id="ongkirInput" inputmode="numeric" placeholder="Rp0">
       <label for="keteranganInput">Keterangan (request khusus)</label>
       <input type="text" id="keteranganInput" placeholder="Contoh: less sugar, no sugar, extra ice">
     </div>
@@ -311,6 +315,7 @@
       <div id="invoiceLines"></div>
       <div class="receipt-line"><span>Subtotal</span><span class="val" id="invoiceSubtotal">Rp0</span></div>
       <div class="receipt-line" id="invoiceDiscountLine" style="display:none;"><span>Diskon</span><span class="val" id="invoiceDiscount">Rp0</span></div>
+      <div class="receipt-line" id="invoiceOngkirLine" style="display:none;"><span>Ongkir / Add-ons</span><span class="val" id="invoiceOngkir">+Rp0</span></div>
       <div class="receipt-line total"><span>Grand Total</span><span class="val" id="invoiceGrandTotal">Rp0</span></div>
       <p id="invoiceKeteranganLine" style="font-style:italic; font-size:12.5px; color:var(--ink-soft); margin:10px 0 0; display:none;"></p>
     </div>
@@ -469,7 +474,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-18-specialdefault-v1";
+const APP_VERSION = "2026-08-19-ongkir-v1";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -758,8 +763,15 @@ function updateCartSummary(){
     return `<div class="receipt-line"><span>${it.menu}${tierLabel} × ${it.qty}${diskonNote}</span><span class="val">${formatRupiah(Math.max(0, itemTotal - it.diskonFinal))}</span></div>`;
   });
   $("cartSummaryLines").innerHTML = lines.join("") || '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item dipilih</p>';
-  const grandTotal = Math.max(0, subtotal - totalDiskon);
+  const ongkir = parseRupiahInput($("ongkirInput"));
+  const grandTotal = Math.max(0, subtotal - totalDiskon + ongkir);
   $("cartSubtotal").textContent = formatRupiah(subtotal);
+  if(ongkir > 0){
+    $("cartOngkirLine").style.display = "flex";
+    $("cartOngkir").textContent = "+" + formatRupiah(ongkir);
+  } else {
+    $("cartOngkirLine").style.display = "none";
+  }
   $("cartGrandTotal").textContent = formatRupiah(grandTotal);
   const customerName = $("customerInput").value.trim();
   $("receiptCustomerLine").textContent = "Customer: " + (customerName || "—");
@@ -769,6 +781,8 @@ function updateCartSummary(){
 $("customerInput").addEventListener("input", updateCartSummary);
 attachRupiahInput($("discountInput"));
 $("discountInput").addEventListener("input", updateCartSummary);
+attachRupiahInput($("ongkirInput"));
+$("ongkirInput").addEventListener("input", updateCartSummary);
 // ---------- Status bayar toggle ----------
 function setStatusBayar(status){
   statusBayar = status;
@@ -794,6 +808,7 @@ $("cancelEditBtn").addEventListener("click", (e) => {
   exitEditMode();
   $("customerInput").value = "";
   $("discountInput").value = "";
+  $("ongkirInput").value = "";
   $("keteranganInput").value = "";
   $("tanggalInputOwner").value = localDateStr(new Date());
   cart = {};
@@ -827,13 +842,19 @@ async function openInvoice(transaksiId){
       return `<div class="receipt-line"><span>${it.menu} × ${it.qty}</span><span class="val">${formatRupiah(lineTotal)}</span></div>`;
     }).join("");
     $("invoiceSubtotal").textContent = formatRupiah(subtotal);
-    const grandTotal = Math.max(0, subtotal - (detail.discount || 0));
+    const grandTotal = Math.max(0, subtotal - (detail.discount || 0) + (detail.ongkir || 0));
     $("invoiceGrandTotal").textContent = formatRupiah(grandTotal);
     if(detail.discount > 0){
       $("invoiceDiscountLine").style.display = "flex";
       $("invoiceDiscount").textContent = "-" + formatRupiah(detail.discount);
     } else {
       $("invoiceDiscountLine").style.display = "none";
+    }
+    if(detail.ongkir > 0){
+      $("invoiceOngkirLine").style.display = "flex";
+      $("invoiceOngkir").textContent = "+" + formatRupiah(detail.ongkir);
+    } else {
+      $("invoiceOngkirLine").style.display = "none";
     }
     if(detail.keterangan){
       $("invoiceKeteranganLine").style.display = "block";
@@ -895,6 +916,7 @@ async function enterEditMode(transaksiId){
     $("customerInput").value = detail.customer || "";
     $("tanggalInputOwner").value = detail.tanggal || localDateStr(new Date());
     $("discountInput").value = ""; // diskon lama sudah tercatat per item di bawah, jangan dobel
+    $("ongkirInput").value = detail.ongkir ? "Rp" + Number(detail.ongkir).toLocaleString("id-ID") : "";
     $("keteranganInput").value = detail.keterangan || "";
     cart = {};
     const hargaByMenu = {}, diskonByMenu = {};
@@ -944,12 +966,13 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
   }
   localStorage.setItem("nama_penjual_owner", penjual);
   const discount = parseRupiahInput($("discountInput"));
+  const ongkir = parseRupiahInput($("ongkirInput"));
   $("submitPenjualanBtn").disabled = true;
   $("penjualanStatusMsg").textContent = "Menyimpan...";
   $("penjualanStatusMsg").className = "status";
   try{
     const payload = {
-      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, keterangan
+      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, ongkir, keterangan
     };
     let result;
     if(editingTransaksiId){
@@ -971,6 +994,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
     // reset form utk transaksi berikutnya
     $("customerInput").value = "";
     $("discountInput").value = "";
+    $("ongkirInput").value = "";
     $("keteranganInput").value = "";
     cart = {};
     document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
