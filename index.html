@@ -469,7 +469,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-18-tanggalinput-v1";
+const APP_VERSION = "2026-08-18-specialdefault-v1";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -641,12 +641,12 @@ function renderMenuOwnerList(){
     items.forEach(m => {
       html += `
         <div class="menu-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
-             data-harga="${m.harga}" data-hargaspecial="${m.hargaSpecial}" data-satuan="${m.satuan}" data-tier="outlet">
+             data-harga="${m.harga}" data-hargaspecial="${m.hargaSpecial}" data-satuan="${m.satuan}" data-tier="special">
           <div class="menu-item-name">${m.menu}</div>
           <div class="menu-item-harga">Outlet ${formatRupiah(m.harga)} · Special ${formatRupiah(m.hargaSpecial)} / ${m.satuan}</div>
           <div class="price-toggle">
-            <button type="button" class="price-btn active" data-tier="outlet">Outlet</button>
-            <button type="button" class="price-btn" data-tier="special">Special</button>
+            <button type="button" class="price-btn active" data-tier="special">Special</button>
+            <button type="button" class="price-btn" data-tier="outlet">Outlet</button>
           </div>
           <div class="stepper">
             <button type="button" class="step-btn minus">−</button>
@@ -801,8 +801,8 @@ $("cancelEditBtn").addEventListener("click", (e) => {
   document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
     document.querySelectorAll("#menuOwnerListCard .itemDiskon").forEach(el => el.value = "");
   document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-    item.dataset.tier = "outlet";
-    item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "outlet"));
+    item.dataset.tier = "special";
+    item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "special"));
   });
   updateCartSummary();
   $("btnPaid").click();
@@ -977,8 +977,8 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
     document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
     document.querySelectorAll("#menuOwnerListCard .itemDiskon").forEach(el => el.value = "");
     document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-      item.dataset.tier = "outlet";
-      item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "outlet"));
+      item.dataset.tier = "special";
+      item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "special"));
     });
     updateCartSummary();
     $("btnPaid").click();
