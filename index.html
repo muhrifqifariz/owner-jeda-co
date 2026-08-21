@@ -493,7 +493,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-22-procurement-v2";
+const APP_VERSION = "2026-08-22-fixspend-v3";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1270,15 +1270,20 @@ $("addJenisProductBtn").addEventListener("click", async () => {
 // ---------- Kategori Product ----------
 // ---------- Inquiry Procurement ----------
 let allProcurementCache = [];
+let procurementSummaryCache = {}; // dari server: { "yyyy-MM": { kategori: total } }, dihitung dari SEMUA data
 async function loadProcurementInquiry(){
   const container = $("procurementInquiryList");
   container.innerHTML = '<p class="empty-note">Memuat...</p>';
   try{
     const data = await apiGet({ action: "listProcurementOwner" });
     allProcurementCache = data.procurement || [];
+    procurementSummaryCache = data.summary || {};
+    $("procurementInquiryStatusMsg").textContent = data.truncated
+      ? `Menampilkan 300 entri terbaru dari total ${data.totalCount} (grafik di atas tetap dihitung dari SEMUA data).`
+      : "";
+    $("procurementInquiryStatusMsg").className = "status";
     populateProcInquiryBulan();
     applyProcInquiryFilter();
-    $("procurementInquiryStatusMsg").textContent = "";
   }catch(e){
     container.innerHTML = "";
     $("procurementInquiryStatusMsg").textContent = "Gagal memuat: " + e.message;
@@ -1293,7 +1298,8 @@ function bulanLabelOf(key){
 function populateProcInquiryBulan(){
   const select = $("procInquiryBulan");
   const current = select.value;
-  const bulanSet = [...new Set(allProcurementCache.map(p => bulanKeyOf(p.tanggalPembelian)).filter(Boolean))]
+  const bulanSet = Object.keys(procurementSummaryCache)
+    .filter(Boolean)
     .sort((a, b) => b.localeCompare(a)); // terbaru dulu
   select.innerHTML = '<option value="">Semua Bulan</option>' +
     bulanSet.map(k => `<option value="${k}">${bulanLabelOf(k)}</option>`).join("");
@@ -1305,18 +1311,23 @@ function applyProcInquiryFilter(){
   const byBulan = bulanFilter ? allProcurementCache.filter(p => bulanKeyOf(p.tanggalPembelian) === bulanFilter) : allProcurementCache;
   const filtered = kategoriFilter ? byBulan.filter(p => p.kategoriProduct === kategoriFilter) : byBulan;
   renderProcurementInquiry(filtered);
-  renderProcSpendChart(byBulan, bulanFilter); // chart ikut filter bulan, TAPI selalu semua kategori
+  renderProcSpendChart(bulanFilter); // dihitung dari summary SERVER (data lengkap), bukan dari daftar di atas
 }
 $("procInquiryFilter").addEventListener("change", applyProcInquiryFilter);
 $("procInquiryBulan").addEventListener("change", applyProcInquiryFilter);
 
-function renderProcSpendChart(list, bulanFilter){
+function renderProcSpendChart(bulanFilter){
   $("procSpendPeriodeNote").textContent = bulanFilter ? bulanLabelOf(bulanFilter) : "Semua bulan (seluruh data)";
+  // Gabungkan totals dari 1 bulan terpilih, ATAU jumlahkan semua bulan kalau "Semua Bulan"
   const totals = {};
   let grandTotal = 0;
-  list.forEach(p => {
-    totals[p.kategoriProduct] = (totals[p.kategoriProduct] || 0) + (p.totalHarga || 0);
-    grandTotal += p.totalHarga || 0;
+  const bulanKeys = bulanFilter ? [bulanFilter] : Object.keys(procurementSummaryCache);
+  bulanKeys.forEach(bk => {
+    const perKategori = procurementSummaryCache[bk] || {};
+    Object.entries(perKategori).forEach(([kategori, total]) => {
+      totals[kategori] = (totals[kategori] || 0) + total;
+      grandTotal += total;
+    });
   });
   const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]); // terbesar dulu
   const maxVal = rows.length ? rows[0][1] : 0;
