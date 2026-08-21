@@ -1,4 +1,4 @@
-const CACHE_NAME = "jeda-owner-v17";
+const CACHE_NAME = "jeda-owner-v18";
 const ASSETS = ["./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./logo-header.png"];
 
 self.addEventListener("install", (event) => {

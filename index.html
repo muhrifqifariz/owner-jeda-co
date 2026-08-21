@@ -166,6 +166,12 @@
   .receipt-line .val{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; }
 
   /* Belum dibayar list */
+  .spend-row{ margin-bottom:12px; }
+  .spend-row-top{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
+  .spend-row-name{ font-weight:600; }
+  .spend-row-amount{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; color:var(--ink-soft); }
+  .spend-bar-track{ background:var(--paper-2); border-radius:6px; height:10px; overflow:hidden; }
+  .spend-bar-fill{ background:var(--maroon); height:100%; border-radius:6px; }
   .bill-item{
     background:#fff; border:1px solid var(--line); border-radius:14px;
     padding:14px 16px; margin-bottom:10px;
@@ -389,10 +395,23 @@
   <section class="screen" id="procurementInquiryScreen">
     <p class="form-section-title" style="margin-top:0">Inquiry Procurement</p>
     <div class="card" style="padding:10px 12px;">
-      <select id="procInquiryFilter" style="border:none; padding:6px;">
-        <option value="">Semua Kategori</option>
-      </select>
+      <div class="row2">
+        <select id="procInquiryBulan" style="border:none; padding:6px;">
+          <option value="">Semua Bulan</option>
+        </select>
+        <select id="procInquiryFilter" style="border:none; padding:6px;">
+          <option value="">Semua Kategori</option>
+        </select>
+      </div>
     </div>
+
+    <div class="card">
+      <p class="form-section-title" style="margin-top:0">Estimasi Spend per Kategori</p>
+      <p id="procSpendPeriodeNote" style="font-size:11.5px; color:var(--ink-soft); margin:-6px 0 10px;"></p>
+      <div id="procSpendChart"></div>
+      <div class="receipt-line total" style="margin-top:8px;"><span>Total</span><span class="val" id="procSpendGrandTotal">Rp0</span></div>
+    </div>
+
     <div id="procurementInquiryList"></div>
     <p class="status" id="procurementInquiryStatusMsg"></p>
   </section>
@@ -474,7 +493,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-19-ongkir-v1";
+const APP_VERSION = "2026-08-22-procurement-v2";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -572,8 +591,8 @@ async function loadOwnerInit(){
   try{
     const data = await apiGet({ action: "getOwnerInit" });
     menuOwnerData = data.menuOwner || [];
-    jenisProductList = data.jenisProductList || [];
-    kategoriProductList = data.kategoriProductList || [];
+    jenisProductList = (data.jenisProductList || []).sort((a, b) => a.localeCompare(b, "id"));
+    kategoriProductList = (data.kategoriProductList || []).sort((a, b) => a.localeCompare(b, "id"));
     satuanList = data.satuanList || [];
     if(data.kategoriSubkategoriMap) kategoriSubkategoriMap = data.kategoriSubkategoriMap;
     $("customerOptions").innerHTML = (data.customerList || []).map(c => `<option value="${c}">`).join("");
@@ -1235,7 +1254,7 @@ $("addJenisProductBtn").addEventListener("click", async () => {
   $("jenisProductStatusMsg").className = "status";
   try{
     await apiPost({ action: "addJenisProduct", nama });
-    jenisProductList.push(nama);
+    jenisProductList.push(nama); jenisProductList.sort((a, b) => a.localeCompare(b, "id"));
     $("procJenis").innerHTML = '<option value="">— Pilih —</option>' +
       jenisProductList.map(j => `<option value="${j}">${j}</option>`).join("");
     $("newJenisProductInput").value = "";
@@ -1257,6 +1276,7 @@ async function loadProcurementInquiry(){
   try{
     const data = await apiGet({ action: "listProcurementOwner" });
     allProcurementCache = data.procurement || [];
+    populateProcInquiryBulan();
     applyProcInquiryFilter();
     $("procurementInquiryStatusMsg").textContent = "";
   }catch(e){
@@ -1265,12 +1285,57 @@ async function loadProcurementInquiry(){
     $("procurementInquiryStatusMsg").className = "status err";
   }
 }
+function bulanKeyOf(tanggalPembelian){ return (tanggalPembelian || "").slice(0, 7); } // "yyyy-MM"
+function bulanLabelOf(key){
+  const [y, m] = key.split("-");
+  return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+}
+function populateProcInquiryBulan(){
+  const select = $("procInquiryBulan");
+  const current = select.value;
+  const bulanSet = [...new Set(allProcurementCache.map(p => bulanKeyOf(p.tanggalPembelian)).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a)); // terbaru dulu
+  select.innerHTML = '<option value="">Semua Bulan</option>' +
+    bulanSet.map(k => `<option value="${k}">${bulanLabelOf(k)}</option>`).join("");
+  if(bulanSet.includes(current)) select.value = current;
+}
 function applyProcInquiryFilter(){
-  const filter = $("procInquiryFilter").value;
-  const filtered = filter ? allProcurementCache.filter(p => p.kategoriProduct === filter) : allProcurementCache;
+  const kategoriFilter = $("procInquiryFilter").value;
+  const bulanFilter = $("procInquiryBulan").value;
+  const byBulan = bulanFilter ? allProcurementCache.filter(p => bulanKeyOf(p.tanggalPembelian) === bulanFilter) : allProcurementCache;
+  const filtered = kategoriFilter ? byBulan.filter(p => p.kategoriProduct === kategoriFilter) : byBulan;
   renderProcurementInquiry(filtered);
+  renderProcSpendChart(byBulan, bulanFilter); // chart ikut filter bulan, TAPI selalu semua kategori
 }
 $("procInquiryFilter").addEventListener("change", applyProcInquiryFilter);
+$("procInquiryBulan").addEventListener("change", applyProcInquiryFilter);
+
+function renderProcSpendChart(list, bulanFilter){
+  $("procSpendPeriodeNote").textContent = bulanFilter ? bulanLabelOf(bulanFilter) : "Semua bulan (seluruh data)";
+  const totals = {};
+  let grandTotal = 0;
+  list.forEach(p => {
+    totals[p.kategoriProduct] = (totals[p.kategoriProduct] || 0) + (p.totalHarga || 0);
+    grandTotal += p.totalHarga || 0;
+  });
+  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]); // terbesar dulu
+  const maxVal = rows.length ? rows[0][1] : 0;
+  const chart = $("procSpendChart");
+  if(!rows.length){
+    chart.innerHTML = '<p class="empty-note">Belum ada data Procurement di periode ini.</p>';
+  } else {
+    chart.innerHTML = rows.map(([kategori, total]) => {
+      const pct = maxVal > 0 ? Math.round((total / maxVal) * 100) : 0;
+      return `
+        <div class="spend-row">
+          <div class="spend-row-top"><span class="spend-row-name">${kategori}</span><span class="spend-row-amount">${formatRupiah(total)}</span></div>
+          <div class="spend-bar-track"><div class="spend-bar-fill" style="width:${pct}%;"></div></div>
+        </div>`;
+    }).join("");
+  }
+  $("procSpendGrandTotal").textContent = formatRupiah(grandTotal);
+}
+
 function renderProcurementInquiry(list){
   const container = $("procurementInquiryList");
   if(!list.length){
@@ -1335,7 +1400,7 @@ $("addKategoriProductBtn").addEventListener("click", async () => {
   $("kategoriProductStatusMsg").className = "status";
   try{
     await apiPost({ action: "addKategoriProduct", nama });
-    kategoriProductList.push(nama);
+    kategoriProductList.push(nama); kategoriProductList.sort((a, b) => a.localeCompare(b, "id"));
     $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
       kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
     $("newKategoriProductInput").value = "";
