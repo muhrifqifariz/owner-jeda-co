@@ -211,12 +211,13 @@
     </div>
   </div>
   <div class="tabs-group">
-    <button class="group-btn active" data-group="penjualanGroup">Penjualan</button>
-    <button class="group-btn" data-group="procurementGroup">Procurement</button>
+    <button class="group-btn active" data-group="penjualanGroup">Uang Masuk</button>
+    <button class="group-btn" data-group="procurementGroup">Uang Keluar</button>
   </div>
   <div class="tabs" id="penjualanGroup">
     <button class="tab-btn active" data-screen="penjualanScreen">Input</button>
     <button class="tab-btn" data-screen="belumDibayarScreen">Inquiry</button>
+    <button class="tab-btn" data-screen="modalAsetScreen">Modal &amp; Aset</button>
     <button class="tab-btn" data-screen="settingMenuScreen">Setting Menu</button>
   </div>
   <div class="tabs" id="procurementGroup" style="display:none;">
@@ -305,6 +306,30 @@
     <p class="status" id="belumDibayarStatusMsg"></p>
   </section>
 
+  <!-- ===================== MODAL & ASET ===================== -->
+  <section class="screen" id="modalAsetScreen">
+    <p class="form-section-title" style="margin-top:0">Catat Modal & Aset</p>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin:-6px 0 10px;">Uang masuk yang TIDAK terikat penjualan produk — modal masuk, jual aset, dll.</p>
+    <div class="card">
+      <label for="modalAsetTanggal">Tanggal</label>
+      <input type="date" id="modalAsetTanggal">
+      <label for="modalAsetKategori">Kategori</label>
+      <select id="modalAsetKategori"><option value="">— Pilih —</option></select>
+      <label for="modalAsetKeterangan">Keterangan</label>
+      <input type="text" id="modalAsetKeterangan" placeholder="Contoh: Suntikan modal dari Rifqi">
+      <label for="modalAsetTotal">Total (Rp)</label>
+      <input type="text" id="modalAsetTotal" inputmode="numeric" placeholder="Rp0">
+    </div>
+    <button class="primary" id="submitModalAsetBtn">Simpan</button>
+    <p class="status" id="modalAsetStatusMsg"></p>
+
+    <div class="receipt" style="margin-top:20px;">
+      <h2>Riwayat Modal & Aset</h2>
+      <div id="modalAsetList"></div>
+      <div class="receipt-line total"><span>Total</span><span class="val" id="modalAsetGrandTotal">Rp0</span></div>
+    </div>
+  </section>
+
   <!-- ===================== INVOICE / NOTA PENJUALAN ===================== -->
   <section class="screen" id="invoiceScreen">
     <button class="back-link" id="backToInquiryBtn">← Kembali ke Inquiry</button>
@@ -355,6 +380,10 @@
       <select id="procJenis"><option value="">— Pilih —</option></select>
       <label for="procKategori">Category (Kategori Product)</label>
       <select id="procKategori"><option value="">— Pilih —</option></select>
+      <div id="procSubKategoriWrap" style="display:none;">
+        <label for="procSubKategori">Sub Kategori Gaji</label>
+        <select id="procSubKategori"><option value="">— Pilih —</option></select>
+      </div>
       <div class="row2">
         <div>
           <label for="procTotalHarga">Total Harga (IDR)</label>
@@ -493,7 +522,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-22-fixspend-v3";
+const APP_VERSION = "2026-08-23-uangmasukkeluar-v1";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -512,6 +541,8 @@ let menuOwnerData = [];
 let jenisProductList = [];
 let kategoriProductList = [];
 let satuanList = [];
+let kategoriModalAsetList = [];
+let subKategoriGajiList = [];
 let procCart = []; // array of {namaProduct, jenisProduct, kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock}
 let cart = {}; // { menuName: qty }
 let statusBayar = "Sudah Dibayar";
@@ -544,6 +575,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "jenisProductScreen") renderJenisProductList();
     if(btn.dataset.screen === "kategoriProductScreen") renderKategoriProductList();
     if(btn.dataset.screen === "procurementInquiryScreen") loadProcurementInquiry();
+    if(btn.dataset.screen === "modalAsetScreen") loadModalAset();
     if(btn.dataset.screen === "satuanOwnerScreen") renderSatuanOwnerList();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
   });
@@ -594,6 +626,10 @@ async function loadOwnerInit(){
     jenisProductList = (data.jenisProductList || []).sort((a, b) => a.localeCompare(b, "id"));
     kategoriProductList = (data.kategoriProductList || []).sort((a, b) => a.localeCompare(b, "id"));
     satuanList = data.satuanList || [];
+    kategoriModalAsetList = data.kategoriModalAsetList || [];
+    subKategoriGajiList = data.subKategoriGajiList || [];
+    $("modalAsetKategori").innerHTML = '<option value="">— Pilih —</option>' +
+      kategoriModalAsetList.map(k => `<option value="${k}">${k}</option>`).join("");
     if(data.kategoriSubkategoriMap) kategoriSubkategoriMap = data.kategoriSubkategoriMap;
     $("customerOptions").innerHTML = (data.customerList || []).map(c => `<option value="${c}">`).join("");
     $("namaProductOptions").innerHTML = (data.namaProductList || []).map(n => `<option value="${n}">`).join("");
@@ -1147,9 +1183,10 @@ function renderProcCart(){
   let grandTotal = 0;
   container.innerHTML = procCart.map((it, idx) => {
     grandTotal += it.totalHarga;
+    const kategoriLabel = it.subKategori ? `${it.kategoriProduct} - ${it.subKategori}` : it.kategoriProduct;
     return `
       <div class="receipt-line" data-idx="${idx}">
-        <span>${it.namaProduct} — ${it.quantity} ${it.satuanPurchase} (${it.kategoriProduct})</span>
+        <span>${it.namaProduct} — ${it.quantity} ${it.satuanPurchase} (${kategoriLabel})</span>
         <span class="val">${formatRupiah(it.totalHarga)} <a href="#" class="removeProcItem" style="color:var(--danger); margin-left:8px;">✕</a></span>
       </div>`;
   }).join("");
@@ -1164,10 +1201,21 @@ function renderProcCart(){
   });
 }
 
+$("procKategori").addEventListener("change", () => {
+  const isGaji = $("procKategori").value === "Gaji";
+  $("procSubKategoriWrap").style.display = isGaji ? "block" : "none";
+  if(isGaji){
+    $("procSubKategori").innerHTML = '<option value="">— Pilih —</option>' +
+      subKategoriGajiList.map(s => `<option value="${s}">${s}</option>`).join("");
+  } else {
+    $("procSubKategori").value = "";
+  }
+});
 $("addProcItemBtn").addEventListener("click", () => {
   const namaProduct = $("procNama").value.trim();
   const jenisProduct = $("procJenis").value;
   const kategoriProduct = $("procKategori").value;
+  const subKategori = kategoriProduct === "Gaji" ? $("procSubKategori").value : "";
   const totalHarga = parseRupiahInput($("procTotalHarga"));
   const quantity = parseFloat($("procQty").value) || 0;
   const satuanPurchase = $("procSatuanPurchase").value;
@@ -1179,7 +1227,12 @@ $("addProcItemBtn").addEventListener("click", () => {
     $("procItemStatusMsg").className = "status err";
     return;
   }
-  procCart.push({ namaProduct, jenisProduct, kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock });
+  if(kategoriProduct === "Gaji" && !subKategori){
+    $("procItemStatusMsg").textContent = "Pilih Sub Kategori Gaji dulu (Gaji Dasar/Insentif Harian/Bonus)";
+    $("procItemStatusMsg").className = "status err";
+    return;
+  }
+  procCart.push({ namaProduct, jenisProduct, kategoriProduct, subKategori, totalHarga, quantity, satuanPurchase, konversi, satuanStock });
   if(!$("namaProductOptions").innerHTML.includes(`value="${namaProduct}"`)){
     $("namaProductOptions").innerHTML += `<option value="${namaProduct}">`;
   }
@@ -1190,6 +1243,7 @@ $("addProcItemBtn").addEventListener("click", () => {
   $("procNama").value = ""; $("procTotalHarga").value = ""; $("procQty").value = "";
   $("procSatuanPurchase").value = ""; $("procKonversi").value = "1"; $("procSatuanStock").value = "";
   $("procJenis").value = ""; $("procKategori").value = "";
+  $("procSubKategoriWrap").style.display = "none"; $("procSubKategori").innerHTML = "";
   $("procNama").focus();
 });
 
@@ -1268,6 +1322,73 @@ $("addJenisProductBtn").addEventListener("click", async () => {
 });
 
 // ---------- Kategori Product ----------
+// ---------- Modal & Aset ----------
+async function loadModalAset(){
+  const container = $("modalAsetList");
+  container.innerHTML = '<p class="empty-note">Memuat...</p>';
+  try{
+    const data = await apiGet({ action: "listModalAsetOwner" });
+    renderModalAsetList(data.modalAset || [], data.grandTotal || 0);
+    $("modalAsetStatusMsg").textContent = "";
+  }catch(e){
+    container.innerHTML = "";
+    $("modalAsetStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("modalAsetStatusMsg").className = "status err";
+  }
+}
+function renderModalAsetList(list, grandTotal){
+  const container = $("modalAsetList");
+  if(!list.length){
+    container.innerHTML = '<p class="empty-note">Belum ada catatan Modal & Aset.</p>';
+  } else {
+    container.innerHTML = list.map(m => {
+      const tanggalStr = new Date(m.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+      return `
+        <div class="receipt-line" style="display:block; padding:10px 0;">
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-weight:600;">${m.kategori}</span>
+            <span class="val">${formatRupiah(m.total)}</span>
+          </div>
+          <div class="meta" style="font-size:12px; color:var(--ink-soft);">${tanggalStr}${m.keterangan ? " · " + m.keterangan : ""}</div>
+        </div>`;
+    }).join("");
+  }
+  $("modalAsetGrandTotal").textContent = formatRupiah(grandTotal);
+}
+attachRupiahInput($("modalAsetTotal"));
+if(!$("modalAsetTanggal").value) $("modalAsetTanggal").value = localDateStr(new Date());
+$("submitModalAsetBtn").addEventListener("click", async () => {
+  const tanggal = $("modalAsetTanggal").value || localDateStr(new Date());
+  const kategori = $("modalAsetKategori").value;
+  const keterangan = $("modalAsetKeterangan").value.trim();
+  const total = parseRupiahInput($("modalAsetTotal"));
+  if(!kategori){
+    $("modalAsetStatusMsg").textContent = "Pilih Kategori dulu";
+    $("modalAsetStatusMsg").className = "status err";
+    return;
+  }
+  if(!total){
+    $("modalAsetStatusMsg").textContent = "Isi Total dulu";
+    $("modalAsetStatusMsg").className = "status err";
+    return;
+  }
+  $("submitModalAsetBtn").disabled = true;
+  $("modalAsetStatusMsg").textContent = "Menyimpan...";
+  $("modalAsetStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "submitModalAset", tanggal, kategori, keterangan, total });
+    $("modalAsetStatusMsg").textContent = "Tersimpan ✓";
+    $("modalAsetStatusMsg").className = "status ok";
+    $("modalAsetKategori").value = ""; $("modalAsetKeterangan").value = ""; $("modalAsetTotal").value = "";
+    loadModalAset();
+  }catch(e){
+    $("modalAsetStatusMsg").textContent = "Gagal menyimpan: " + e.message;
+    $("modalAsetStatusMsg").className = "status err";
+  }finally{
+    $("submitModalAsetBtn").disabled = false;
+  }
+});
+
 // ---------- Inquiry Procurement ----------
 let allProcurementCache = [];
 let procurementSummaryCache = {}; // dari server: { "yyyy-MM": { kategori: total } }, dihitung dari SEMUA data
@@ -1362,7 +1483,7 @@ function renderProcurementInquiry(list){
           <span class="tanggal">${tanggalStr}</span>
         </div>
         <div style="margin:4px 0;">
-          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:var(--maroon); padding:2px 8px; border-radius:8px;">${p.kategoriProduct}</span>
+          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:var(--maroon); padding:2px 8px; border-radius:8px;">${p.kategoriProduct}${p.subKategori ? " · " + p.subKategori : ""}</span>
           <span class="meta" style="margin-left:6px;">${p.jenisProduct}</span>
         </div>
         <div class="bottom">
