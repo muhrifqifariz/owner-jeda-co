@@ -113,6 +113,11 @@
     background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:12.5px; cursor:pointer;
   }
   .price-btn.active{ background:var(--maroon); border-color:var(--maroon); color:#fff; }
+  .pool-toggle-btn{
+    flex:1; padding:9px 4px; border-radius:8px; border:1.5px solid var(--line);
+    background:var(--paper); color:var(--ink-soft); font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .pool-toggle-btn.active{ background:var(--maroon); border-color:var(--maroon); color:#fff; }
   .stepper{ display:flex; align-items:stretch; gap:8px; }
   .stepper input{
     text-align:center; font-size:18px; font-weight:700;
@@ -427,6 +432,12 @@
     <p class="form-section-title" style="margin-top:0">Inquiry Procurement</p>
     <div class="card" style="padding:10px 12px;">
       <div class="row2">
+        <button type="button" class="pool-toggle-btn active" id="inquiryPoolProcurementBtn">Procurement</button>
+        <button type="button" class="pool-toggle-btn" id="inquiryPoolGajiBtn">Gaji</button>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 12px;">
+      <div class="row2">
         <select id="procInquiryBulan" style="border:none; padding:6px;">
           <option value="">Semua Bulan</option>
         </select>
@@ -549,7 +560,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-piechart-v3";
+const APP_VERSION = "2026-08-24-splitgaji-v4";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1420,19 +1431,23 @@ $("submitModalAsetBtn").addEventListener("click", async () => {
 
 // ---------- Inquiry Procurement ----------
 let allProcurementCache = [];
+let allGajiCache = [];
 let procurementSummaryCache = {}; // dari server: { "yyyy-MM": { kategori: total } }, dihitung dari SEMUA data
+let inquiryPoolAktif = "procurement"; // "procurement" atau "gaji"
+const KATEGORI_PROCUREMENT_NON_GAJI = ["Bahan Baku", "Packaging", "Aset / Capex", "Operating Expense", "Owner Withdrawal"];
+const SUBKATEGORI_GAJI_FILTER = ["Insentif Harian", "Bonus"];
+
 async function loadProcurementInquiry(){
   const container = $("procurementInquiryList");
   container.innerHTML = '<p class="empty-note">Memuat...</p>';
   try{
     const data = await apiGet({ action: "listProcurementOwner" });
     allProcurementCache = data.procurement || [];
+    allGajiCache = data.gaji || [];
     procurementSummaryCache = data.summary || {};
-    $("procurementInquiryStatusMsg").textContent = data.truncated
-      ? `Menampilkan 300 entri terbaru dari total ${data.totalCount} (grafik di atas tetap dihitung dari SEMUA data).`
-      : "";
-    $("procurementInquiryStatusMsg").className = "status";
+    updateInquiryTruncatedNote(data);
     populateProcInquiryBulan();
+    populateProcInquiryKategori();
     applyProcInquiryFilter();
   }catch(e){
     container.innerHTML = "";
@@ -1440,6 +1455,29 @@ async function loadProcurementInquiry(){
     $("procurementInquiryStatusMsg").className = "status err";
   }
 }
+function updateInquiryTruncatedNote(data){
+  const truncated = inquiryPoolAktif === "gaji" ? data.truncatedGaji : data.truncatedProcurement;
+  const totalCount = inquiryPoolAktif === "gaji" ? data.totalCountGaji : data.totalCountProcurement;
+  $("procurementInquiryStatusMsg").textContent = truncated
+    ? `Menampilkan 300 entri terbaru dari total ${totalCount} (grafik Report tetap dihitung dari SEMUA data).`
+    : "";
+  $("procurementInquiryStatusMsg").className = "status";
+}
+function populateProcInquiryKategori(){
+  const select = $("procInquiryFilter");
+  const opsi = inquiryPoolAktif === "gaji" ? SUBKATEGORI_GAJI_FILTER : KATEGORI_PROCUREMENT_NON_GAJI;
+  const label = inquiryPoolAktif === "gaji" ? "Semua Sub Kategori" : "Semua Kategori";
+  select.innerHTML = `<option value="">${label}</option>` + opsi.map(k => `<option value="${k}">${k}</option>`).join("");
+}
+function switchInquiryPool(pool){
+  inquiryPoolAktif = pool;
+  $("inquiryPoolProcurementBtn").classList.toggle("active", pool === "procurement");
+  $("inquiryPoolGajiBtn").classList.toggle("active", pool === "gaji");
+  populateProcInquiryKategori();
+  applyProcInquiryFilter();
+}
+$("inquiryPoolProcurementBtn").addEventListener("click", () => switchInquiryPool("procurement"));
+$("inquiryPoolGajiBtn").addEventListener("click", () => switchInquiryPool("gaji"));
 function bulanKeyOf(tanggalPembelian){ return (tanggalPembelian || "").slice(0, 7); } // "yyyy-MM"
 function bulanLabelOf(key){
   const [y, m] = key.split("-");
@@ -1458,8 +1496,11 @@ function populateProcInquiryBulan(){
 function applyProcInquiryFilter(){
   const kategoriFilter = $("procInquiryFilter").value;
   const bulanFilter = $("procInquiryBulan").value;
-  const byBulan = bulanFilter ? allProcurementCache.filter(p => bulanKeyOf(p.tanggalPembelian) === bulanFilter) : allProcurementCache;
-  const filtered = kategoriFilter ? byBulan.filter(p => p.kategoriProduct === kategoriFilter) : byBulan;
+  const sumberData = inquiryPoolAktif === "gaji" ? allGajiCache : allProcurementCache;
+  const byBulan = bulanFilter ? sumberData.filter(p => bulanKeyOf(p.tanggalPembelian) === bulanFilter) : sumberData;
+  const filtered = kategoriFilter
+    ? byBulan.filter(p => inquiryPoolAktif === "gaji" ? p.subKategori === kategoriFilter : p.kategoriProduct === kategoriFilter)
+    : byBulan;
   renderProcurementInquiry(filtered);
 }
 $("procInquiryFilter").addEventListener("change", applyProcInquiryFilter);
