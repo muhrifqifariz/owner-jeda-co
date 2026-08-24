@@ -575,6 +575,22 @@
       <select id="hrGajiBulan"></select>
     </div>
     <div class="receipt" id="hrGajiCard"></div>
+
+    <div class="card" id="hrPenyesuaianCard" style="display:none;">
+      <p class="form-section-title" style="margin-top:0">Penyesuaian Tambahan</p>
+      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 10px;">Contoh: honor kerjaan tambahan (Tambahan), atau hutang/cost di luar gaji (Potongan).</p>
+      <div id="hrPenyesuaianList"></div>
+      <div class="row2" style="margin-top:8px;">
+        <select id="hrPenyesuaianTipe">
+          <option value="Tambahan">Tambahan</option>
+          <option value="Potongan">Potongan</option>
+        </select>
+        <input type="text" id="hrPenyesuaianJumlah" inputmode="numeric" placeholder="Rp0">
+      </div>
+      <input type="text" id="hrPenyesuaianKeterangan" placeholder="Keterangan (mis. Honor angkut barang)" style="margin-top:8px;">
+      <button class="primary" id="hrPenyesuaianTambahBtn" style="margin-top:10px;">+ Tambah Penyesuaian</button>
+      <div class="receipt-line total" style="margin-top:14px;"><span>Total Setelah Penyesuaian</span><span class="val" id="hrTotalSetelahPenyesuaian">Rp0</span></div>
+    </div>
     <p class="status" id="hrGajiStatusMsg"></p>
     <p style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:16px;">
       Perhitungan Gaji ini murni INSIGHT/dasar slip gaji manual — TIDAK
@@ -639,7 +655,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-hrgaji-v7";
+const APP_VERSION = "2026-08-24-slipgaji-v8";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1595,38 +1611,96 @@ function renderKehadiran(days, rider){
 }
 
 // ---- Gaji ----
+let hrGajiDataCache = null;
+let hrPenyesuaianList = []; // [{tipe: "Tambahan"/"Potongan", jumlah, keterangan}]
+
 async function loadGaji(rider, bulan){
   const card = $("hrGajiCard");
   card.innerHTML = '<p class="empty-note">Memuat...</p>';
   $("hrGajiStatusMsg").textContent = "";
   try{
     const g = await apiGet({ action: "getGajiRider", rider, bulan, skema: hrGajiSkema });
-    const periodeLabel = new Date(g.periodeMulai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short" }) +
-      " – " + new Date(g.periodeSelesai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
-    const liburSakitNote = g.jumlahLiburSakitTidakDibayar > 0
-      ? `${g.jumlahLiburSakitDibayar} dibayar, ${g.jumlahLiburSakitTidakDibayar} lewat kuota (tidak dibayar)`
-      : `${g.jumlahLiburSakitDibayar} dibayar (dari kuota 4)`;
-    card.innerHTML = `
-      <h2>Slip Gaji — ${rider}</h2>
-      <p class="meta" style="text-align:center; margin-top:-8px;">Periode ${periodeLabel}</p>
-      <div class="receipt-line"><span>Jumlah Hari Hadir</span><span class="val">${g.jumlahHariHadir} hari</span></div>
-      <div class="receipt-line"><span>Libur + Sakit (${g.jumlahLiburSakit} total)</span><span class="val">${liburSakitNote}</span></div>
-      <div class="receipt-line"><span>Day Off (selalu dibayar)</span><span class="val">${g.jumlahDayOff} hari</span></div>
-      <div class="receipt-line"><span>Absen (tidak dibayar)</span><span class="val">${g.jumlahAbsen} hari</span></div>
-      <div class="receipt-line"><span>Total Hari Dibayar</span><span class="val">${g.jumlahHariDibayar} hari</span></div>
-      <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
-      <div class="receipt-line"><span>Total Insentif Harian</span><span class="val">${formatRupiah(g.totalOperasional)}</span></div>
-      <div class="receipt-line"><span>Total Bonus Harian (Komisi)</span><span class="val">${formatRupiah(g.totalKomisi)}</span></div>
-      <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
-      <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
-      <div class="receipt-line total"><span>Total Gaji Periode Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
-    `;
+    hrGajiDataCache = g;
+    hrPenyesuaianList = []; // reset tiap ganti rider/bulan/skema, slip baru
+    renderSlipGaji(g);
   }catch(e){
     card.innerHTML = "";
     $("hrGajiStatusMsg").textContent = "Gagal memuat: " + e.message;
     $("hrGajiStatusMsg").className = "status err";
+    $("hrPenyesuaianCard").style.display = "none";
   }
 }
+function renderSlipGaji(g){
+  const card = $("hrGajiCard");
+  const periodeLabel = new Date(g.periodeMulai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short" }) +
+    " – " + new Date(g.periodeSelesai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+  const liburSakitNote = g.jumlahLiburSakitTidakDibayar > 0
+    ? `${g.jumlahLiburSakitDibayar} dibayar, ${g.jumlahLiburSakitTidakDibayar} lewat kuota (tidak dibayar)`
+    : `${g.jumlahLiburSakitDibayar} dibayar (dari kuota 4)`;
+  const gajiDasarPlusBonus = g.gajiDasar + g.bonusBulanan;
+  const insentifPlusBonusHarian = g.totalOperasional + g.totalKomisi;
+  card.innerHTML = `
+    <h2>Slip Gaji — ${g.rider}</h2>
+    <p class="meta" style="text-align:center; margin-top:12px; font-weight:700;">Periode ${periodeLabel}</p>
+    <div class="receipt-line"><span>Jumlah Hari Hadir</span><span class="val">${g.jumlahHariHadir} hari</span></div>
+    <div class="receipt-line"><span>Libur + Sakit (${g.jumlahLiburSakit} total)</span><span class="val">${liburSakitNote}</span></div>
+    <div class="receipt-line"><span>Day Off (selalu dibayar)</span><span class="val">${g.jumlahDayOff} hari</span></div>
+    <div class="receipt-line"><span>Absen (tidak dibayar)</span><span class="val">${g.jumlahAbsen} hari</span></div>
+    <div class="receipt-line" style="font-weight:700;"><span>Total Hari Dibayar</span><span class="val">${g.jumlahHariDibayar} hari</span></div>
+    <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
+    <div class="receipt-line"><span>Total Insentif Harian</span><span class="val">${formatRupiah(g.totalOperasional)}</span></div>
+    <div class="receipt-line"><span>Total Bonus Harian (Komisi)</span><span class="val">${formatRupiah(g.totalKomisi)}</span></div>
+    <div class="receipt-line" style="font-weight:700;"><span>Insentif Harian + Bonus Harian</span><span class="val">${formatRupiah(insentifPlusBonusHarian)}</span></div>
+    <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
+    <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
+    <div class="receipt-line" style="font-weight:700;"><span>Gaji Dasar + Bonus Bulanan</span><span class="val">${formatRupiah(gajiDasarPlusBonus)}</span></div>
+    <div class="receipt-line total"><span>Total Gaji Periode Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
+  `;
+  renderPenyesuaian();
+}
+
+// ---- Penyesuaian Tambahan (Tambahan/Potongan di luar gaji standar) ----
+function renderPenyesuaian(){
+  const wrap = $("hrPenyesuaianCard");
+  if(!hrGajiDataCache){ wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  const listEl = $("hrPenyesuaianList");
+  if(!hrPenyesuaianList.length){
+    listEl.innerHTML = '<p class="empty-note">Belum ada penyesuaian.</p>';
+  } else {
+    listEl.innerHTML = hrPenyesuaianList.map((p, idx) => {
+      const warna = p.tipe === "Tambahan" ? "var(--ok)" : "var(--danger)";
+      const tanda = p.tipe === "Tambahan" ? "+" : "-";
+      return `
+        <div class="receipt-line" data-idx="${idx}">
+          <span>${p.keterangan || p.tipe} <span style="font-size:11px; color:${warna};">(${p.tipe})</span></span>
+          <span class="val">${tanda}${formatRupiah(p.jumlah)} <a href="#" class="removePenyesuaian" style="color:var(--danger); margin-left:6px;">✕</a></span>
+        </div>`;
+    }).join("");
+    listEl.querySelectorAll(".removePenyesuaian").forEach(a => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const idx = parseInt(a.closest(".receipt-line").dataset.idx);
+        hrPenyesuaianList.splice(idx, 1);
+        renderPenyesuaian();
+      });
+    });
+  }
+  const totalPenyesuaian = hrPenyesuaianList.reduce((sum, p) => sum + (p.tipe === "Tambahan" ? p.jumlah : -p.jumlah), 0);
+  const totalAkhir = hrGajiDataCache.totalGaji + totalPenyesuaian;
+  $("hrTotalSetelahPenyesuaian").textContent = formatRupiah(totalAkhir);
+}
+attachRupiahInput($("hrPenyesuaianJumlah"));
+$("hrPenyesuaianTambahBtn").addEventListener("click", () => {
+  const tipe = $("hrPenyesuaianTipe").value;
+  const jumlah = parseRupiahInput($("hrPenyesuaianJumlah"));
+  const keterangan = $("hrPenyesuaianKeterangan").value.trim();
+  if(!jumlah) return;
+  hrPenyesuaianList.push({ tipe, jumlah, keterangan });
+  $("hrPenyesuaianJumlah").value = "";
+  $("hrPenyesuaianKeterangan").value = "";
+  renderPenyesuaian();
+});
 
 // ---- Karyawan ----
 async function loadKaryawan(){
