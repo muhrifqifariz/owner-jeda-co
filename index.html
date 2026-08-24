@@ -177,6 +177,26 @@
   .spend-row-amount{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; color:var(--ink-soft); }
   .spend-bar-track{ background:var(--paper-2); border-radius:6px; height:10px; overflow:hidden; }
   .spend-bar-fill{ background:var(--maroon); height:100%; border-radius:6px; }
+  .hr-day-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px solid var(--line); }
+  .hr-day-row:first-child{ border-top:none; }
+  .hr-day-date{ font-size:13.5px; font-weight:600; }
+  .hr-day-badge{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:8px; color:#fff; }
+  .hr-badge-hadir{ background:#1F6F50; }
+  .hr-badge-absen{ background:var(--danger); }
+  .hr-badge-libur{ background:#6B7280; }
+  .hr-badge-sakit{ background:#B5495A; }
+  .hr-outstanding-btns{ display:flex; gap:6px; }
+  .hr-outstanding-btns button{
+    padding:6px 10px; border-radius:8px; border:1.5px solid var(--line);
+    background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:11.5px; cursor:pointer;
+  }
+  .karyawan-row{ border-top:1px solid var(--line); padding:14px 0; }
+  .karyawan-row:first-child{ border-top:none; }
+  .karyawan-row-name{ font-size:15px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .karyawan-badge-inaktif{ font-size:10.5px; font-weight:700; color:#fff; background:var(--danger); padding:2px 8px; border-radius:8px; }
+  .karyawan-dates{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .karyawan-dates label{ font-size:11px; margin-bottom:2px; }
+  .karyawan-dates input{ padding:8px; font-size:13px; }
   .bill-item{
     background:#fff; border:1px solid var(--line); border-radius:14px;
     padding:14px 16px; margin-bottom:10px;
@@ -218,6 +238,7 @@
   <div class="tabs-group">
     <button class="group-btn active" data-group="penjualanGroup">Uang Masuk</button>
     <button class="group-btn" data-group="procurementGroup">Uang Keluar</button>
+    <button class="group-btn" data-group="hrGroup">HR</button>
   </div>
   <div class="tabs" id="penjualanGroup">
     <button class="tab-btn active" data-screen="penjualanScreen">Input</button>
@@ -233,6 +254,11 @@
     <button class="tab-btn" data-screen="jenisProductScreen">Type</button>
     <button class="tab-btn" data-screen="kategoriProductScreen">Category</button>
     <button class="tab-btn" data-screen="satuanOwnerScreen">Unit</button>
+  </div>
+  <div class="tabs" id="hrGroup" style="display:none;">
+    <button class="tab-btn active" data-screen="hrKehadiranScreen">Kehadiran</button>
+    <button class="tab-btn" data-screen="hrGajiScreen">Gaji</button>
+    <button class="tab-btn" data-screen="hrKaryawanScreen">Karyawan</button>
   </div>
 </header>
 
@@ -519,6 +545,51 @@
     <p class="status" id="satuanOwnerStatusMsg"></p>
   </section>
 
+  <!-- ===================== HR: KEHADIRAN ===================== -->
+  <section class="screen" id="hrKehadiranScreen">
+    <p class="form-section-title" style="margin-top:0">Kehadiran</p>
+    <div class="card">
+      <label for="hrKehadiranRider">Pilih Rider</label>
+      <select id="hrKehadiranRider"><option value="">— Pilih Rider —</option></select>
+      <label for="hrKehadiranBulan">Bulan</label>
+      <select id="hrKehadiranBulan"></select>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;" id="hrKehadiranNote"></p>
+    <div class="card" id="hrKehadiranCard"></div>
+    <p class="status" id="hrKehadiranStatusMsg"></p>
+  </section>
+
+  <!-- ===================== HR: GAJI ===================== -->
+  <section class="screen" id="hrGajiScreen">
+    <p class="form-section-title" style="margin-top:0">Gaji</p>
+    <div class="card">
+      <label for="hrGajiRider">Pilih Rider</label>
+      <select id="hrGajiRider"><option value="">— Pilih Rider —</option></select>
+      <label for="hrGajiBulan">Bulan</label>
+      <select id="hrGajiBulan"></select>
+    </div>
+    <div class="receipt" id="hrGajiCard"></div>
+    <p class="status" id="hrGajiStatusMsg"></p>
+    <p style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:16px;">
+      Perhitungan Gaji ini murni INSIGHT/dasar slip gaji manual — TIDAK
+      otomatis masuk ke Uang Keluar. Bonus Bulanan: total Cup+Cookies ≥
+      1.000 → Rp300.000, ≥ 2.000 → Rp500.000 (bukan tambahan, langsung
+      Rp500.000 total).
+    </p>
+  </section>
+
+  <!-- ===================== HR: KARYAWAN ===================== -->
+  <section class="screen" id="hrKaryawanScreen">
+    <p class="form-section-title" style="margin-top:0">Karyawan</p>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">
+      Isi Tanggal Selesai Kerja utk rider yang sudah tidak aktif — otomatis
+      ditandai "Tidak Aktif" di dropdown Kehadiran/Gaji, biar tidak bingung
+      membedakan mana yang masih benar-benar kerja.
+    </p>
+    <div class="card" id="hrKaryawanCard"></div>
+    <p class="status" id="hrKaryawanStatusMsg"></p>
+  </section>
+
   <!-- ===================== SETTING MENU ===================== -->
   <section class="screen" id="settingMenuScreen">
     <div class="card" id="menuOwnerManageCard"></div>
@@ -560,7 +631,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-splitgaji-v5";
+const APP_VERSION = "2026-08-24-hr-v6";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -618,6 +689,9 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "modalAsetScreen") loadModalAset();
     if(btn.dataset.screen === "satuanOwnerScreen") renderSatuanOwnerList();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
+    if(btn.dataset.screen === "hrKehadiranScreen") loadHrTab("kehadiran");
+    if(btn.dataset.screen === "hrGajiScreen") loadHrTab("gaji");
+    if(btn.dataset.screen === "hrKaryawanScreen") loadHrTab("karyawan");
   });
 });
 document.querySelectorAll(".group-btn").forEach(btn => {
@@ -1360,6 +1434,238 @@ $("addJenisProductBtn").addEventListener("click", async () => {
     $("jenisProductStatusMsg").className = "status err";
   }
 });
+
+// ---------- HR ----------
+let daftarKaryawanCache = []; // [{rider, tanggalMulai, tanggalSelesai}]
+
+function bulanOptionsTerakhir(n){
+  const opts = [];
+  const now = new Date();
+  for(let i = 0; i < n; i++){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const label = d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    opts.push({ key, label });
+  }
+  return opts;
+}
+function populateBulanSelect(selectId){
+  const select = $(selectId);
+  if(select.options.length) return; // isi sekali saja
+  const opts = bulanOptionsTerakhir(12);
+  select.innerHTML = opts.map(o => `<option value="${o.key}">${o.label}</option>`).join("");
+}
+function isKaryawanTidakAktif(rider){
+  const k = daftarKaryawanCache.find(x => x.rider === rider);
+  if(!k || !k.tanggalSelesai) return false;
+  return k.tanggalSelesai <= localDateStr(new Date());
+}
+async function refreshDaftarKaryawanCache(){
+  try{
+    const data = await apiGet({ action: "getDaftarKaryawan" });
+    daftarKaryawanCache = data.karyawan || [];
+    document.querySelectorAll('#hrKehadiranRider option, #hrGajiRider option').forEach(opt => {
+      if(!opt.value) return;
+      opt.textContent = isKaryawanTidakAktif(opt.value) ? opt.value + " (Tidak Aktif)" : opt.value;
+    });
+  }catch(e){ /* diam, tidak fatal */ }
+}
+async function populateHrRiderDropdowns(){
+  if($("hrKehadiranRider").options.length > 1) return; // sudah pernah diisi
+  try{
+    const data = await apiGet({}); // action default -> termasuk daftar riders
+    const riders = data.riders || [];
+    const optionsHtml = '<option value="">— Pilih Rider —</option>' + riders.map(r => `<option value="${r}">${r}</option>`).join("");
+    $("hrKehadiranRider").innerHTML = optionsHtml;
+    $("hrGajiRider").innerHTML = optionsHtml;
+  }catch(e){ /* diam */ }
+}
+
+async function loadHrTab(sub){
+  await populateHrRiderDropdowns();
+  await refreshDaftarKaryawanCache();
+  if(sub === "kehadiran"){
+    populateBulanSelect("hrKehadiranBulan");
+    if($("hrKehadiranRider").value && $("hrKehadiranBulan").value) loadKehadiran($("hrKehadiranRider").value, $("hrKehadiranBulan").value);
+  } else if(sub === "gaji"){
+    populateBulanSelect("hrGajiBulan");
+    if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
+  } else if(sub === "karyawan"){
+    loadKaryawan();
+  }
+}
+$("hrKehadiranRider").addEventListener("change", () => {
+  if($("hrKehadiranRider").value && $("hrKehadiranBulan").value) loadKehadiran($("hrKehadiranRider").value, $("hrKehadiranBulan").value);
+});
+$("hrKehadiranBulan").addEventListener("change", () => {
+  if($("hrKehadiranRider").value && $("hrKehadiranBulan").value) loadKehadiran($("hrKehadiranRider").value, $("hrKehadiranBulan").value);
+});
+$("hrGajiRider").addEventListener("change", () => {
+  if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
+});
+$("hrGajiBulan").addEventListener("change", () => {
+  if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
+});
+
+// ---- Kehadiran ----
+async function loadKehadiran(rider, bulan){
+  const card = $("hrKehadiranCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("hrKehadiranStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getKehadiranRider", rider, bulan });
+    if(!data.tanggalMulai){
+      card.innerHTML = "";
+      $("hrKehadiranNote").textContent = `${rider} belum pernah submit sama sekali, belum ada data kehadiran.`;
+      return;
+    }
+    const mulaiLabel = new Date(data.tanggalMulai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    $("hrKehadiranNote").textContent = `Mulai kerja: ${mulaiLabel}. Hari "Outstanding" perlu diklasifikasi manual.`;
+    renderKehadiran(data.days, rider);
+  }catch(e){
+    card.innerHTML = "";
+    $("hrKehadiranStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("hrKehadiranStatusMsg").className = "status err";
+  }
+}
+function renderKehadiran(days, rider){
+  const card = $("hrKehadiranCard");
+  if(!days.length){
+    card.innerHTML = '<p class="empty-note">Belum ada hari yang berlaku di bulan ini.</p>';
+    return;
+  }
+  const badgeClass = { "Hadir": "hr-badge-hadir", "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit" };
+  card.innerHTML = days.map(d => {
+    const tanggalLabel = new Date(d.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"short", day:"numeric", month:"short" });
+    if(d.status === "Outstanding"){
+      return `
+        <div class="hr-day-row" data-tanggal="${d.tanggal}">
+          <span class="hr-day-date">${tanggalLabel}</span>
+          <div class="hr-outstanding-btns">
+            <button type="button" data-status="Absen">Absen</button>
+            <button type="button" data-status="Libur">Libur</button>
+            <button type="button" data-status="Sakit">Sakit</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="hr-day-row">
+        <span class="hr-day-date">${tanggalLabel}</span>
+        <span class="hr-day-badge ${badgeClass[d.status] || ''}">${d.status}</span>
+      </div>`;
+  }).join("");
+
+  card.querySelectorAll(".hr-outstanding-btns button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest(".hr-day-row");
+      const tanggal = row.dataset.tanggal;
+      const status = btn.dataset.status;
+      btn.parentElement.querySelectorAll("button").forEach(b => b.disabled = true);
+      try{
+        await apiPost({ action: "setAbsensi", rider, tanggal, status });
+        const tanggalLabel = new Date(tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"short", day:"numeric", month:"short" });
+        const bClass = { "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit" };
+        row.innerHTML = `<span class="hr-day-date">${tanggalLabel}</span><span class="hr-day-badge ${bClass[status]}">${status}</span>`;
+      }catch(e){
+        $("hrKehadiranStatusMsg").textContent = "Gagal simpan: " + e.message;
+        $("hrKehadiranStatusMsg").className = "status err";
+        btn.parentElement.querySelectorAll("button").forEach(b => b.disabled = false);
+      }
+    });
+  });
+}
+
+// ---- Gaji ----
+async function loadGaji(rider, bulan){
+  const card = $("hrGajiCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("hrGajiStatusMsg").textContent = "";
+  try{
+    const g = await apiGet({ action: "getGajiRider", rider, bulan });
+    const bulanLabel = new Date(bulan + "-01T00:00:00").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    card.innerHTML = `
+      <h2>Slip Gaji — ${rider}</h2>
+      <p class="meta" style="text-align:center; margin-top:-8px;">${bulanLabel}</p>
+      <div class="receipt-line"><span>Jumlah Hari Hadir</span><span class="val">${g.jumlahHariHadir} hari</span></div>
+      <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
+      <div class="receipt-line"><span>Total Insentif Harian</span><span class="val">${formatRupiah(g.totalOperasional)}</span></div>
+      <div class="receipt-line"><span>Total Bonus Harian (Komisi)</span><span class="val">${formatRupiah(g.totalKomisi)}</span></div>
+      <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
+      <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
+      <div class="receipt-line total"><span>Total Gaji Bulan Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
+    `;
+  }catch(e){
+    card.innerHTML = "";
+    $("hrGajiStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("hrGajiStatusMsg").className = "status err";
+  }
+}
+
+// ---- Karyawan ----
+async function loadKaryawan(){
+  const card = $("hrKaryawanCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("hrKaryawanStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getDaftarKaryawan" });
+    daftarKaryawanCache = data.karyawan || [];
+    renderKaryawan();
+  }catch(e){
+    card.innerHTML = "";
+    $("hrKaryawanStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("hrKaryawanStatusMsg").className = "status err";
+  }
+}
+function renderKaryawan(){
+  const card = $("hrKaryawanCard");
+  if(!daftarKaryawanCache.length){
+    card.innerHTML = "<p>Belum ada rider.</p>";
+    return;
+  }
+  card.innerHTML = daftarKaryawanCache.map(k => {
+    const tidakAktif = isKaryawanTidakAktif(k.rider);
+    return `
+      <div class="karyawan-row" data-rider="${k.rider}">
+        <div class="karyawan-row-name">${k.rider}${tidakAktif ? '<span class="karyawan-badge-inaktif">Tidak Aktif</span>' : ''}</div>
+        <div class="karyawan-dates">
+          <div>
+            <label>Tanggal Mulai Kerja</label>
+            <input type="date" class="karyawanMulai" value="${k.tanggalMulai || ''}">
+          </div>
+          <div>
+            <label>Tanggal Selesai Kerja</label>
+            <input type="date" class="karyawanSelesai" value="${k.tanggalSelesai || ''}">
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+
+  card.querySelectorAll(".karyawan-row").forEach(row => {
+    const rider = row.dataset.rider;
+    const mulaiInput = row.querySelector(".karyawanMulai");
+    const selesaiInput = row.querySelector(".karyawanSelesai");
+    async function simpan(){
+      $("hrKaryawanStatusMsg").textContent = "Menyimpan...";
+      $("hrKaryawanStatusMsg").className = "status";
+      try{
+        await apiPost({
+          action: "updateStatusKaryawan", rider,
+          tanggalMulai: mulaiInput.value, tanggalSelesai: selesaiInput.value
+        });
+        $("hrKaryawanStatusMsg").textContent = "Tersimpan ✓";
+        $("hrKaryawanStatusMsg").className = "status ok";
+        const k = daftarKaryawanCache.find(x => x.rider === rider);
+        if(k){ k.tanggalMulai = mulaiInput.value; k.tanggalSelesai = selesaiInput.value; }
+        renderKaryawan();
+      }catch(e){
+        $("hrKaryawanStatusMsg").textContent = "Gagal simpan: " + e.message;
+        $("hrKaryawanStatusMsg").className = "status err";
+      }
+    }
+    mulaiInput.addEventListener("change", simpan);
+    selesaiInput.addEventListener("change", simpan);
+  });
+}
 
 // ---------- Kategori Product ----------
 // ---------- Modal & Aset ----------
