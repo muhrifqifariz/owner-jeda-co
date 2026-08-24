@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Jeda Owner</title>
+<title>Jeda Admin</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7A1E2B">
+<meta name="theme-color" content="#A67C00">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-title" content="Jeda Owner">
+<meta name="apple-mobile-web-app-title" content="Jeda Admin">
 <style>
   :root{
     --paper:#F6F3EC; --paper-2:#EFEADF; --ink:#22261F; --ink-soft:#5B5F52;
-    --maroon:#7A1E2B; --maroon-dark:#591420; --gold:#B8860B;
-    --line:#D9D3C3; --danger:#B4432E; --blue-bg:#DCEFFB; --ok:#1F6F50;
+    --emerald:#1F6F50; --emerald-dark:#154D37; --gold:#A67C00; --gold-dark:#7A5B00;
+    --line:#D9D3C3; --danger:#B4432E; --blue-bg:#DCEFFB;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -22,7 +22,7 @@
     min-height:100vh; padding:0 0 40px;
   }
   header{
-    background:var(--maroon); color:#fff; padding:22px 20px 16px;
+    background:var(--gold); color:#fff; padding:22px 20px 16px;
     border-bottom-left-radius:22px; border-bottom-right-radius:22px;
     box-shadow:0 4px 14px rgba(0,0,0,0.12);
   }
@@ -30,19 +30,13 @@
   header .brand img{ height:40px; width:auto; }
   header .eyebrow{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.8; margin:0 0 4px; }
   header h1{ margin:0; font-family:Georgia, serif; font-size:22px; font-weight:700; }
-  .tabs{ display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; }
+  .tabs{ display:flex; gap:6px; margin-top:16px; }
   .tab-btn{
-    flex:1 1 auto; min-width:70px; padding:9px 4px; border:none; border-radius:10px;
-    background:rgba(255,255,255,0.18); color:#fff; font-size:12px; font-weight:600; cursor:pointer;
+    flex:1; padding:9px 4px; border:none; border-radius:10px;
+    background:rgba(255,255,255,0.2); color:#fff;
+    font-size:12px; font-weight:600; cursor:pointer;
   }
-  .tab-btn.active{ background:var(--paper); color:var(--maroon-dark); }
-  .tabs-group{ display:flex; gap:6px; margin-top:16px; }
-  .group-btn{
-    flex:1; padding:10px 4px; border:none; border-radius:10px 10px 0 0;
-    background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.75);
-    font-size:13px; font-weight:700; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;
-  }
-  .group-btn.active{ background:rgba(255,255,255,0.9); color:var(--maroon-dark); }
+  .tab-btn.active{ background:var(--paper); color:var(--gold-dark); }
 
   main{ max-width:520px; margin:0 auto; padding:18px 16px 0; }
   .screen{ display:none; }
@@ -59,150 +53,137 @@
     border:1.5px solid var(--line); border-radius:10px;
     background:var(--paper); color:var(--ink); font-family:inherit;
   }
-  input:focus, select:focus{ outline:none; border-color:var(--maroon); background:#fff; }
+  input:focus, select:focus{ outline:none; border-color:var(--gold); background:#fff; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 
   button.primary{
-    width:100%; padding:15px; background:var(--maroon); color:#fff; border:none;
+    width:100%; padding:15px; background:var(--gold); color:#fff; border:none;
     border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; margin-top:6px;
   }
   button.primary:disabled{ opacity:.6; }
   button.secondary{
-    width:100%; padding:12px; background:transparent; color:var(--maroon-dark);
-    border:1.5px solid var(--maroon); border-radius:12px; font-size:14px; font-weight:600;
+    width:100%; padding:12px; background:transparent; color:var(--gold-dark);
+    border:1.5px solid var(--gold); border-radius:12px; font-size:14px; font-weight:600;
     cursor:pointer; margin-top:10px;
   }
-  button.ok-btn{
-    padding:8px 14px; background:var(--ok); color:#fff; border:none;
-    border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+  button.danger{
+    width:100%; padding:12px; background:transparent; color:var(--danger);
+    border:1.5px solid var(--danger); border-radius:12px; font-size:14px; font-weight:600;
+    cursor:pointer; margin-top:10px;
   }
   .status{ text-align:center; font-size:13px; min-height:18px; margin:10px 0; color:var(--ink-soft); }
-  .status.ok{ color:var(--ok); font-weight:600; }
+  .status.ok{ color:var(--emerald-dark); font-weight:600; }
   .status.err{ color:var(--danger); font-weight:600; }
 
-  .form-section-title{
-    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
-    color:var(--ink-soft); margin:18px 0 6px; font-weight:700;
+  /* PIN gate */
+  #pinGate{
+    max-width:340px; margin:60px auto 0; text-align:center;
+  }
+  #pinGate .lock{
+    width:60px; height:60px; border-radius:50%; background:var(--gold); color:#fff;
+    font-size:28px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
+  }
+  #pinGate h2{ font-family:Georgia, serif; margin:0 0 6px; color:var(--gold-dark); }
+  #pinGate p{ font-size:13px; color:var(--ink-soft); margin:0 0 16px; }
+  #pinInput{ text-align:center; font-size:22px; letter-spacing:.3em; }
+
+  /* Submission list */
+  .sub-item{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; margin-bottom:10px; cursor:pointer;
+  }
+  .sub-item .top{ display:flex; justify-content:space-between; align-items:baseline; }
+  .sub-item .rider{ font-weight:700; font-size:15px; }
+  .sub-item .tanggal{ font-size:12px; color:var(--ink-soft); }
+  .sub-item .bottom{
+    display:flex; justify-content:space-between; margin-top:8px; font-size:13px;
+  }
+  .sub-item .label{ color:var(--ink-soft); }
+  .sub-item .rp{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; font-weight:600; }
+  .empty-note{ text-align:center; color:var(--ink-soft); font-size:13.5px; padding:30px 10px; }
+  .riwayat-item{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:12px 16px; margin-bottom:8px; font-size:13px;
+  }
+  .riwayat-item .top{ display:flex; justify-content:space-between; margin-bottom:4px; }
+  .riwayat-item .waktu{ color:var(--ink-soft); font-size:11.5px; }
+  .riwayat-item .aksi{
+    font-size:10.5px; font-weight:700; text-transform:uppercase;
+    padding:2px 8px; border-radius:8px; background:var(--paper-2); color:var(--gold-dark);
+  }
+  .riwayat-item .detail{ font-weight:600; }
+  .riwayat-item .perubahan{
+    font-variant-numeric:tabular-nums; font-family:Consolas, monospace;
+    color:var(--danger); font-weight:700;
   }
 
-  /* group menu (Penjualan) */
-  .menu-group-title{
-    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
-    color:var(--ink-soft); margin:16px 0 6px; font-weight:700;
-    display:flex; align-items:center; justify-content:space-between;
-    cursor:pointer; background:none; border:none; width:100%;
-    padding:10px 0 8px; font-family:inherit;
+  /* Edit screen */
+  .back-link{
+    display:inline-flex; align-items:center; gap:6px; color:var(--gold-dark);
+    font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:12px; background:none; border:none;
   }
-  .menu-group-title .toggle-icon{
-    flex-shrink:0; width:26px; height:26px; border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:16px; font-weight:700; line-height:1;
-    background:var(--maroon); color:#fff;
-  }
-  .menu-group.collapsed .menu-group-title .toggle-icon{
-    background:var(--paper-2); color:var(--maroon); border:1.5px solid var(--maroon);
-  }
-  .menu-group.collapsed .menu-group-items{ display:none; }
-  .menu-item{ border-top:1px solid var(--line); padding:12px 0; }
-  .menu-item:first-child{ border-top:none; }
-  .menu-item-name{ font-size:15px; font-weight:600; margin-bottom:2px; }
-  .menu-item-harga{ font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; }
-  .price-toggle{ display:flex; gap:6px; margin-bottom:8px; }
-  .price-btn{
-    flex:1; padding:6px 4px; border-radius:8px; border:1.5px solid var(--line);
-    background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:12.5px; cursor:pointer;
-  }
-  .price-btn.active{ background:var(--maroon); border-color:var(--maroon); color:#fff; }
+  .edit-item{ border-top:1px solid var(--line); padding:12px 0; }
+  .acuan-item{ border-top:1px solid var(--line); padding:14px 0; }
+  .acuan-item:first-child{ border-top:none; }
+  .acuan-item-name{ font-size:15px; font-weight:600; margin-bottom:8px; }
+  .acuan-tipe-select{ width:auto; display:inline-block; padding:6px 10px; font-size:13px; margin-bottom:10px; }
   .pool-toggle-btn{
     flex:1; padding:9px 4px; border-radius:8px; border:1.5px solid var(--line);
     background:var(--paper); color:var(--ink-soft); font-weight:700; font-size:13px; cursor:pointer;
   }
-  .pool-toggle-btn.active{ background:var(--maroon); border-color:var(--maroon); color:#fff; }
-  .stepper{ display:flex; align-items:stretch; gap:8px; }
-  .stepper input{
-    text-align:center; font-size:18px; font-weight:700;
-    background:var(--blue-bg); border-color:#B9DCF2; padding:8px 4px;
+  .pool-toggle-btn.active{ background:var(--gold); border-color:var(--gold); color:#fff; }
+  .hr-day-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px solid var(--line); }
+  .hr-day-row:first-child{ border-top:none; }
+  .hr-day-date{ font-size:13.5px; font-weight:600; }
+  .hr-day-badge{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:8px; color:#fff; }
+  .hr-badge-hadir{ background:#1F6F50; }
+  .hr-badge-absen{ background:var(--danger); }
+  .hr-badge-libur{ background:#6B7280; }
+  .hr-badge-sakit{ background:#B5495A; }
+  .hr-outstanding-btns{ display:flex; gap:6px; }
+  .hr-outstanding-btns button{
+    padding:6px 10px; border-radius:8px; border:1.5px solid var(--line);
+    background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:11.5px; cursor:pointer;
   }
-  .step-btn{
-    flex-shrink:0; width:44px; border:none; border-radius:10px;
-    background:var(--maroon); color:#fff; font-size:22px; font-weight:700;
-    cursor:pointer; line-height:1;
+  .receipt{ background:var(--paper); border:1.5px solid var(--line); border-radius:14px; padding:18px; }
+  .receipt h2{ font-size:16px; text-align:center; margin:0 0 4px; color:var(--emerald-dark); }
+  .receipt-line{ display:flex; justify-content:space-between; padding:8px 0; border-top:1px dashed var(--line); font-size:13.5px; }
+  .receipt-line:first-of-type{ border-top:none; }
+  .receipt-line .val{ font-weight:600; font-variant-numeric:tabular-nums; }
+  .receipt-line.total{ border-top:2px solid var(--emerald); margin-top:6px; padding-top:12px; font-size:15px; font-weight:700; color:var(--emerald-dark); }
+  .karyawan-row{ border-top:1px solid var(--line); padding:14px 0; }
+  .karyawan-row:first-child{ border-top:none; }
+  .karyawan-row-name{ font-size:15px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .karyawan-badge-inaktif{ font-size:10.5px; font-weight:700; color:#fff; background:var(--danger); padding:2px 8px; border-radius:8px; }
+  .karyawan-dates{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .karyawan-dates label{ font-size:11px; margin-bottom:2px; }
+  .karyawan-dates input{ padding:8px; font-size:13px; }
+  .acuan-cols{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .acuan-col-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:2px; }
+  .acuan-col-avg{ font-size:12px; color:var(--ink-soft); }
+  .acuan-col-value{ font-size:20px; font-weight:700; color:var(--gold-dark); font-variant-numeric:tabular-nums; }
+  .item-group-title{
+    font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--gold-dark); margin:16px 0 4px; font-weight:700;
+    border-bottom:1px solid var(--line); padding-bottom:6px;
   }
-  .step-btn.minus{ background:var(--paper-2); color:var(--danger); border:1.5px solid var(--danger); }
-  .menu-item-calc{
-    display:flex; justify-content:flex-end; font-size:12.5px;
+  .item-group-title:first-child{ margin-top:0; }
+  .edit-item:first-child{ border-top:none; }
+  .edit-item-name{ font-size:15px; font-weight:600; margin-bottom:2px; }
+  .edit-item-harga{ font-size:12.5px; color:var(--ink-soft); margin-bottom:8px; }
+  .edit-item .row2 input{ background:var(--blue-bg); border-color:#B9DCF2; }
+  .edit-item-calc{
+    display:flex; justify-content:space-between; font-size:12.5px;
     color:var(--ink-soft); margin-top:8px;
   }
-  .menu-item-calc .val{ font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink); }
+  .edit-item-calc .val{ font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink); }
 
-  /* status bayar toggle */
-  .paystatus-toggle{ display:flex; gap:10px; margin-top:6px; }
-  .paystatus-btn{
-    flex:1; padding:12px; border-radius:10px; border:1.5px solid var(--line);
-    background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:14px; cursor:pointer;
-  }
-  .paystatus-btn.active.paid{ background:var(--ok); border-color:var(--ok); color:#fff; }
-  .paystatus-btn.active.unpaid{ background:var(--danger); border-color:var(--danger); color:#fff; }
-  .paystatus-btn.active.order{ background:var(--gold); border-color:var(--gold); color:#fff; }
-
-  .receipt{
-    margin-top:16px; background:var(--paper-2); border-radius:16px 16px 4px 4px;
-    padding:16px 18px 14px; border:1px dashed var(--line);
-  }
-  .receipt h2{
-    font-family:Georgia, serif; font-size:13px; letter-spacing:.1em;
-    text-transform:uppercase; margin:0 0 2px; color:var(--ink-soft);
-  }
-  .receipt-header{
-    display:flex; justify-content:space-between; align-items:flex-start;
-    margin-bottom:12px; padding-bottom:10px; border-bottom:1px dashed var(--line);
-  }
-  .receipt-logo{ height:38px; width:auto; border-radius:8px; flex-shrink:0; }
-  .receipt-meta{ font-size:12px; color:var(--ink-soft); }
-  .back-link{
-    display:inline-flex; align-items:center; gap:6px; color:var(--maroon-dark);
-    font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:12px; background:none; border:none;
-  }
-  .receipt-line{ display:flex; justify-content:space-between; font-size:14px; padding:5px 0; }
-  .receipt-line.total{
+  .summary-row{ display:flex; justify-content:space-between; font-size:14px; padding:6px 0; }
+  .summary-row .rp{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; }
+  .summary-row.total{
     border-top:1px dashed var(--line); margin-top:6px; padding-top:10px;
-    font-size:18px; font-weight:700; color:var(--maroon-dark);
+    font-size:17px; font-weight:700; color:var(--gold-dark);
   }
-  .receipt-line .val{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; }
-
-  /* Belum dibayar list */
-  .spend-row{ margin-bottom:12px; }
-  .spend-row-top{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
-  .spend-row-name{ font-weight:600; }
-  .spend-row-amount{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; color:var(--ink-soft); }
-  .spend-bar-track{ background:var(--paper-2); border-radius:6px; height:10px; overflow:hidden; }
-  .spend-bar-fill{ background:var(--maroon); height:100%; border-radius:6px; }
-  .bill-item{
-    background:#fff; border:1px solid var(--line); border-radius:14px;
-    padding:14px 16px; margin-bottom:10px;
-  }
-  .bill-item .top{ display:flex; justify-content:space-between; align-items:baseline; }
-  .bill-item .customer{ font-weight:700; font-size:15px; }
-  .bill-item .tanggal{ font-size:12px; color:var(--ink-soft); }
-  .bill-item .bottom{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
-  .bill-item .rp{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; font-weight:700; font-size:16px; color:var(--maroon-dark); }
-  .bill-item .meta{ font-size:12px; color:var(--ink-soft); }
-  .empty-note{ text-align:center; color:var(--ink-soft); font-size:13.5px; padding:30px 10px; }
-
-  /* Jenis product & menu management list */
-  .list-manage-item{
-    display:flex; align-items:center; gap:10px; border-top:1px solid var(--line);
-    padding:12px 0;
-  }
-  .list-manage-item:first-child{ border-top:none; }
-  .list-manage-info{ flex:1; }
-  .list-manage-name{ font-size:14.5px; font-weight:600; }
-  .list-manage-sub{ font-size:12px; color:var(--ink-soft); }
-  .icon-btn{
-    border:none; background:var(--paper-2); border-radius:8px; padding:8px 10px;
-    font-size:13px; cursor:pointer; color:var(--ink);
-  }
-  .icon-btn.del{ color:var(--danger); }
 </style>
 </head>
 <body>
@@ -211,380 +192,208 @@
   <div class="brand">
     <img src="logo-header.png" alt="Logo">
     <div>
-      <p class="eyebrow">Panel Owner</p>
-      <h1>Jeda Owner</h1>
+      <p class="eyebrow">Panel Koreksi Data</p>
+      <h1>Jeda Admin</h1>
     </div>
   </div>
-  <div class="tabs-group">
-    <button class="group-btn active" data-group="penjualanGroup">Uang Masuk</button>
-    <button class="group-btn" data-group="procurementGroup">Uang Keluar</button>
-  </div>
-  <div class="tabs" id="penjualanGroup">
-    <button class="tab-btn active" data-screen="penjualanScreen">Input</button>
-    <button class="tab-btn" data-screen="belumDibayarScreen">Inquiry</button>
-    <button class="tab-btn" data-screen="penjualanReportScreen">Report</button>
-    <button class="tab-btn" data-screen="modalAsetScreen">Modal &amp; Aset</button>
-    <button class="tab-btn" data-screen="settingMenuScreen">Setting Menu</button>
-  </div>
-  <div class="tabs" id="procurementGroup" style="display:none;">
-    <button class="tab-btn" data-screen="procurementScreen">Input</button>
-    <button class="tab-btn" data-screen="procurementInquiryScreen">Inquiry</button>
-    <button class="tab-btn" data-screen="procurementReportScreen">Report</button>
-    <button class="tab-btn" data-screen="jenisProductScreen">Type</button>
-    <button class="tab-btn" data-screen="kategoriProductScreen">Category</button>
-    <button class="tab-btn" data-screen="satuanOwnerScreen">Unit</button>
+  <div class="tabs" id="adminTabs" style="display:none;">
+    <button class="tab-btn" data-screen="acuanStockScreen">Acuan Stock</button>
+    <button class="tab-btn active" data-screen="listScreen">Revisi Data</button>
+    <button class="tab-btn" data-screen="stockScreen">Set Stock Awal</button>
+    <button class="tab-btn" data-screen="riwayatScreen">Riwayat</button>
+    <button class="tab-btn" data-screen="hrScreen">HR</button>
   </div>
 </header>
 
 <main>
 
-  <!-- ===================== PENJUALAN ===================== -->
-  <section class="screen active" id="penjualanScreen">
-    <div class="card">
-      <label for="penjualInput">Nama Penjual</label>
-      <select id="penjualInput"><option value="">— Pilih —</option></select>
-      <label for="customerInput">Nama Customer</label>
-      <input type="text" id="customerInput" list="customerOptions" placeholder="Ketik atau pilih nama customer" autocomplete="off">
-      <datalist id="customerOptions"></datalist>
-      <label for="tanggalInputOwner">Tanggal</label>
-      <input type="date" id="tanggalInputOwner">
-    </div>
-
-    <div class="card" id="menuOwnerListCard">
-      <!-- diisi otomatis lewat JS -->
-    </div>
-
-    <div class="receipt">
-      <div class="receipt-header">
-        <div>
-          <h2 style="margin-bottom:2px;">Nota Penjualan</h2>
-          <div class="receipt-meta" id="receiptCustomerLine">Customer: —</div>
-          <div class="receipt-meta" id="receiptTanggalLine"></div>
-        </div>
-        <img src="icon-192.png" alt="Jeda" class="receipt-logo">
-      </div>
-      <div id="cartSummaryLines"></div>
-      <div class="receipt-line"><span>Subtotal</span><span class="val" id="cartSubtotal">Rp0</span></div>
-      <div class="receipt-line" id="cartOngkirLine" style="display:none;"><span>Ongkir / Add-ons</span><span class="val" id="cartOngkir">+Rp0</span></div>
-      <div class="receipt-line total"><span>Grand Total</span><span class="val" id="cartGrandTotal">Rp0</span></div>
-    </div>
-
-    <div class="card">
-      <label for="discountInput">Diskon Tambahan / Umum (Rp)</label>
-      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 8px;">Dibagi rata proporsional ke semua item sesuai nilainya. Untuk diskon khusus 1 produk, isi di kolom "Diskon item ini" pada produknya langsung.</p>
-      <input type="text" id="discountInput" inputmode="numeric" placeholder="Rp0">
-      <label for="ongkirInput">Ongkir / Add-ons (Rp)</label>
-      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 8px;">Biaya tambahan (ongkir, packaging, dll) — ditambahkan ke Grand Total, tidak kena diskon.</p>
-      <input type="text" id="ongkirInput" inputmode="numeric" placeholder="Rp0">
-      <label for="keteranganInput">Keterangan (request khusus)</label>
-      <input type="text" id="keteranganInput" placeholder="Contoh: less sugar, no sugar, extra ice">
-    </div>
-
-    <p class="status" id="editModeNote" style="display:none; color:var(--gold); font-weight:600;">
-      Mode Edit — sedang merevisi transaksi. Tekan "Simpan Revisi" untuk menyimpan, atau
-      <a href="#" id="cancelEditBtn" style="color:var(--maroon-dark);">batalkan</a>.
-    </p>
-
-    <div class="card">
-      <label style="margin:0 0 8px;">Status Bayar</label>
-      <div class="paystatus-toggle">
-        <button type="button" class="paystatus-btn active paid" id="btnPaid">✓ Sudah Dibayar</button>
-        <button type="button" class="paystatus-btn" id="btnUnpaid">Belum Dibayar</button>
-        <button type="button" class="paystatus-btn" id="btnOrder">PO</button>
-      </div>
-    </div>
-
-    <button class="primary" id="submitPenjualanBtn">Catat Transaksi</button>
-    <p class="status" id="penjualanStatusMsg"></p>
+  <!-- ===================== PIN GATE ===================== -->
+  <section class="screen active" id="pinGate">
+    <div class="lock">🔒</div>
+    <h2>Masuk Admin</h2>
+    <p>Masukkan PIN admin (diatur di sheet Aturan, sel B9)</p>
+    <input type="password" id="pinInput" inputmode="numeric" placeholder="••••" maxlength="12">
+    <button class="primary" id="pinSubmitBtn">Masuk</button>
+    <p class="status" id="pinStatusMsg"></p>
   </section>
 
-  <!-- ===================== BELUM DIBAYAR ===================== -->
-  <section class="screen" id="belumDibayarScreen">
-    <p class="form-section-title" style="margin-top:0">Inquiry Penjualan</p>
-    <div class="card" style="padding:10px 12px;">
-      <select id="inquiryFilter" style="border:none; padding:6px;">
-        <option value="">Semua Status</option>
-        <option value="Sudah Dibayar">Sudah Lunas</option>
-        <option value="Belum Dibayar">Belum Lunas</option>
-        <option value="PO">PO</option>
-      </select>
-    </div>
-    <div id="belumDibayarList"></div>
-    <p class="status" id="belumDibayarStatusMsg"></p>
-  </section>
-
-  <!-- ===================== MODAL & ASET ===================== -->
-  <section class="screen" id="modalAsetScreen">
-    <p class="form-section-title" style="margin-top:0">Catat Modal & Aset</p>
-    <p style="font-size:11.5px; color:var(--ink-soft); margin:-6px 0 10px;">Uang masuk yang TIDAK terikat penjualan produk — modal masuk, jual aset, dll.</p>
+  <!-- ===================== LIST SUBMISSIONS ===================== -->
+  <section class="screen" id="listScreen">
     <div class="card">
-      <label for="modalAsetTanggal">Tanggal</label>
-      <input type="date" id="modalAsetTanggal">
-      <label for="modalAsetKategori">Kategori</label>
-      <select id="modalAsetKategori"><option value="">— Pilih —</option></select>
-      <label for="modalAsetKeterangan">Keterangan</label>
-      <input type="text" id="modalAsetKeterangan" placeholder="Contoh: Suntikan modal dari Rifqi">
-      <label for="modalAsetTotal">Total (Rp)</label>
-      <input type="text" id="modalAsetTotal" inputmode="numeric" placeholder="Rp0">
-    </div>
-    <button class="primary" id="submitModalAsetBtn">Simpan</button>
-    <p class="status" id="modalAsetStatusMsg"></p>
-
-    <div class="receipt" style="margin-top:20px;">
-      <h2>Riwayat Modal & Aset</h2>
-      <div id="modalAsetList"></div>
-      <div class="receipt-line total"><span>Total</span><span class="val" id="modalAsetGrandTotal">Rp0</span></div>
-    </div>
-  </section>
-
-  <!-- ===================== INVOICE / NOTA PENJUALAN ===================== -->
-  <section class="screen" id="invoiceScreen">
-    <button class="back-link" id="backToInquiryBtn">← Kembali ke Inquiry</button>
-
-    <div class="receipt">
-      <div class="receipt-header">
-        <div>
-          <h2 style="margin-bottom:2px;">Nota Penjualan</h2>
-          <div class="receipt-meta" id="invoiceCustomerLine">Customer: —</div>
-          <div class="receipt-meta" id="invoiceTanggalLine"></div>
-        </div>
-        <img src="icon-192.png" alt="Jeda" class="receipt-logo">
-      </div>
-      <div id="invoiceLines"></div>
-      <div class="receipt-line"><span>Subtotal</span><span class="val" id="invoiceSubtotal">Rp0</span></div>
-      <div class="receipt-line" id="invoiceDiscountLine" style="display:none;"><span>Diskon</span><span class="val" id="invoiceDiscount">Rp0</span></div>
-      <div class="receipt-line" id="invoiceOngkirLine" style="display:none;"><span>Ongkir / Add-ons</span><span class="val" id="invoiceOngkir">+Rp0</span></div>
-      <div class="receipt-line total"><span>Grand Total</span><span class="val" id="invoiceGrandTotal">Rp0</span></div>
-      <p id="invoiceKeteranganLine" style="font-style:italic; font-size:12.5px; color:var(--ink-soft); margin:10px 0 0; display:none;"></p>
-    </div>
-
-    <div class="card">
-      <label style="margin:0 0 8px;">Status Bayar</label>
-      <div class="paystatus-toggle">
-        <button type="button" class="paystatus-btn" id="invBtnPaid">✓ Sudah Dibayar</button>
-        <button type="button" class="paystatus-btn" id="invBtnUnpaid">Belum Dibayar</button>
-        <button type="button" class="paystatus-btn" id="invBtnPO">PO</button>
-      </div>
-    </div>
-
-    <button class="secondary" id="editInvoiceBtn" style="display:none;">Edit Transaksi Ini</button>
-    <p class="status" id="invoiceStatusMsg"></p>
-  </section>
-
-  <!-- ===================== PROCUREMENT ===================== -->
-  <section class="screen" id="procurementScreen">
-    <div class="card">
-      <label for="procTanggal">Tanggal Pembelian</label>
-      <input type="date" id="procTanggal">
-    </div>
-
-    <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Item Pembelian</p>
-      <label for="procNama">Nama / Merk Product</label>
-      <input type="text" id="procNama" list="namaProductOptions" placeholder="Ketik atau pilih nama/merk product" autocomplete="off">
-      <datalist id="namaProductOptions"></datalist>
-      <label for="procJenis">Type (Jenis Product)</label>
-      <select id="procJenis"><option value="">— Pilih —</option></select>
-      <label for="procKategori">Category (Kategori Product)</label>
-      <select id="procKategori"><option value="">— Pilih —</option></select>
-      <div id="procSubKategoriWrap" style="display:none;">
-        <label for="procSubKategori">Sub Kategori Gaji</label>
-        <select id="procSubKategori"><option value="">— Pilih —</option></select>
-      </div>
+      <label for="filterRider">Filter Rider</label>
+      <select id="filterRider"><option value="">Semua Rider</option></select>
       <div class="row2">
         <div>
-          <label for="procTotalHarga">Total Harga (IDR)</label>
-          <input type="text" id="procTotalHarga" inputmode="numeric" placeholder="Rp0">
+          <label for="filterTanggal">Filter Tanggal</label>
+          <input type="date" id="filterTanggal">
         </div>
-        <div>
-          <label for="procQty">Quantity</label>
-          <input type="number" id="procQty" inputmode="numeric" placeholder="0" min="0">
-        </div>
-      </div>
-      <div class="row2">
-        <div>
-          <label for="procSatuanPurchase">Unit Pertama (saat beli)</label>
-          <select id="procSatuanPurchase"><option value="">— Pilih —</option></select>
-        </div>
-        <div>
-          <label for="procKonversi">Konversi ke Unit Kedua</label>
-          <input type="number" id="procKonversi" inputmode="numeric" placeholder="1" min="0" value="1">
+        <div style="display:flex; align-items:flex-end;">
+          <button class="secondary" id="clearFilterBtn" style="margin-top:12px;">Reset Filter</button>
         </div>
       </div>
-      <label for="procSatuanStock">Unit Kedua (saat disimpan/stock)</label>
-      <select id="procSatuanStock"><option value="">— Pilih —</option></select>
-      <button type="button" class="secondary" id="addProcItemBtn" style="margin-top:14px;">+ Tambah ke Daftar</button>
-      <p class="status" id="procItemStatusMsg"></p>
     </div>
 
-    <div class="receipt">
-      <h2>Daftar Item Akan Disimpan</h2>
-      <div id="procCartLines"><p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item ditambahkan</p></div>
-      <div class="receipt-line total"><span>Total Semua Item</span><span class="val" id="procCartGrandTotal">Rp0</span></div>
-    </div>
-
-    <button class="primary" id="submitProcurementBtn">Simpan Semua Procurement</button>
-    <p class="status" id="procurementStatusMsg"></p>
+    <div id="submissionList"></div>
+    <p class="status" id="listStatusMsg"></p>
   </section>
 
-  <!-- ===================== INQUIRY PROCUREMENT ===================== -->
-  <section class="screen" id="procurementInquiryScreen">
-    <p class="form-section-title" style="margin-top:0">Inquiry Procurement</p>
-    <div class="card" style="padding:10px 12px;">
-      <div class="row2">
-        <button type="button" class="pool-toggle-btn active" id="inquiryPoolProcurementBtn">Procurement</button>
-        <button type="button" class="pool-toggle-btn" id="inquiryPoolGajiBtn">Gaji</button>
-      </div>
-    </div>
-    <div class="card" style="padding:10px 12px;">
-      <div class="row2">
-        <select id="procInquiryBulan" style="border:none; padding:6px;">
-          <option value="">Semua Bulan</option>
-        </select>
-        <select id="procInquiryFilter" style="border:none; padding:6px;">
-          <option value="">Semua Kategori</option>
-        </select>
-      </div>
-    </div>
+  <!-- ===================== EDIT SUBMISSION ===================== -->
+  <section class="screen" id="editScreen">
+    <button class="back-link" id="backToListBtn">← Kembali ke daftar</button>
 
-    <div id="procurementInquiryList"></div>
-    <p class="status" id="procurementInquiryStatusMsg"></p>
-  </section>
-
-  <!-- ===================== REPORT UANG KELUAR ===================== -->
-  <section class="screen" id="procurementReportScreen">
-    <p class="form-section-title" style="margin-top:0">Report Uang Keluar</p>
-    <div class="card" style="padding:10px 12px;">
-      <select id="procReportBulan" style="border:none; padding:6px;">
-        <option value="">Semua Bulan</option>
-      </select>
-    </div>
     <div class="card">
-      <p class="form-section-title" style="margin-top:0">Estimasi Spend per Kategori</p>
-      <p id="procSpendPeriodeNote" style="font-size:11.5px; color:var(--ink-soft); margin:-6px 0 10px;"></p>
-      <div id="procSpendChart"></div>
-      <div class="receipt-line total" style="margin-top:8px;"><span>Total</span><span class="val" id="procSpendGrandTotal">Rp0</span></div>
+      <div style="font-weight:700; font-size:15px;" id="editRiderTanggal"></div>
     </div>
+
+    <div class="card" id="editItemsCard"></div>
+
+    <div class="card">
+      <label for="editModal">Modal (Kembalian)</label>
+      <input type="text" id="editModal" inputmode="numeric" placeholder="Rp0">
+      <label for="editQris">QRIS</label>
+      <input type="text" id="editQris" inputmode="numeric" placeholder="Rp0">
+
+      <div class="summary-row"><span>Jumlah Cup Minuman</span><span class="rp" id="editJumlahCup">0</span></div>
+      <div class="summary-row"><span>Jumlah Cookies</span><span class="rp" id="editJumlahCookies">0</span></div>
+      <div class="summary-row"><span>Total Minuman</span><span class="rp" id="editRpMinuman">Rp0</span></div>
+      <div class="summary-row"><span>Total Cookies</span><span class="rp" id="editRpCookies">Rp0</span></div>
+      <div class="summary-row"><span>Estimasi Komisi + Insentif</span><span class="rp" id="editKomisiOps">Rp0</span></div>
+      <div class="summary-row total"><span>Setoran Cash</span><span class="rp" id="editSetoranCash">Rp0</span></div>
+      <p id="editAmbilKomisiNote" style="font-size:11.5px; color:var(--ink-soft); text-align:center; margin:8px 0 0;"></p>
+    </div>
+
+    <button class="primary" id="saveSubmissionBtn">Simpan Perubahan</button>
+    <button class="danger" id="deleteSubmissionBtn">Hapus Submission Ini</button>
+    <p class="status" id="editStatusMsg"></p>
   </section>
 
-  <!-- ===================== REPORT UANG MASUK ===================== -->
-  <section class="screen" id="penjualanReportScreen">
-    <p class="form-section-title" style="margin-top:0">Report Uang Masuk</p>
-    <div class="card" style="padding:10px 12px;">
-      <select id="pemasukanReportBulan" style="border:none; padding:6px;">
-        <option value="">Semua Bulan</option>
-      </select>
-    </div>
+  <!-- ===================== SET STOCK AWAL ===================== -->
+  <section class="screen" id="stockScreen">
     <div class="card">
-      <p class="form-section-title" style="margin-top:0">Estimasi Uang Masuk per Kategori</p>
-      <p id="pemasukanReportPeriodeNote" style="font-size:11.5px; color:var(--ink-soft); margin:-6px 0 10px;"></p>
-      <div id="pemasukanReportChart"></div>
-      <div class="receipt-line total" style="margin-top:8px;"><span>Total</span><span class="val" id="pemasukanReportGrandTotal">Rp0</span></div>
+      <label for="stockRider">Pilih Rider</label>
+      <select id="stockRider"><option value="">— Pilih Rider —</option></select>
+      <label for="stockTanggal">Tanggal</label>
+      <input type="date" id="stockTanggal">
     </div>
-  </section>
 
-  <!-- ===================== JENIS PRODUCT ===================== -->
-  <section class="screen" id="jenisProductScreen">
-    <p class="form-section-title" style="margin-top:0">Procurement Type</p>
-    <div class="card" id="jenisProductListCard"></div>
-    <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Type Baru</p>
-      <input type="text" id="newJenisProductInput" placeholder="Contoh: Sirup Vanilla">
-      <button class="primary" id="addJenisProductBtn" style="margin-bottom:16px;">Tambah</button>
+    <div class="card" id="stockSummaryCard" style="display:none;">
+      <p class="form-section-title" style="margin-top:0">Ringkasan Bawaan</p>
+      <div class="receipt-line"><span>Minuman</span><span class="val" id="stockSummaryMinuman">0 cup</span></div>
+      <div class="receipt-line"><span>Cookies</span><span class="val" id="stockSummaryCookies">0 pcs</span></div>
     </div>
-    <p class="status" id="jenisProductStatusMsg"></p>
-  </section>
 
-  <!-- ===================== KATEGORI PRODUCT ===================== -->
-  <section class="screen" id="kategoriProductScreen">
-    <p class="form-section-title" style="margin-top:0">Procurement Category</p>
-    <div class="card" id="kategoriProductListCard"></div>
-    <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Category Baru</p>
-      <input type="text" id="newKategoriProductInput" placeholder="Contoh: Marketing">
-      <button class="primary" id="addKategoriProductBtn" style="margin-bottom:16px;">Tambah</button>
+    <div class="card" id="stockItemsCard">
+      <p class="empty-note">Pilih rider & tanggal dulu di atas.</p>
     </div>
-    <p class="status" id="kategoriProductStatusMsg"></p>
-  </section>
 
-  <!-- ===================== SATUAN / UNIT ===================== -->
-  <section class="screen" id="satuanOwnerScreen">
-    <p class="form-section-title" style="margin-top:0">Unit (Satuan Purchase & Stock)</p>
-    <div class="card" id="satuanOwnerListCard"></div>
-    <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Unit Baru</p>
-      <input type="text" id="newSatuanOwnerInput" placeholder="Contoh: karung">
-      <button class="primary" id="addSatuanOwnerBtn" style="margin-bottom:16px;">Tambah</button>
-    </div>
-    <p class="status" id="satuanOwnerStatusMsg"></p>
-  </section>
-
-  <!-- ===================== SETTING MENU ===================== -->
-  <section class="screen" id="settingMenuScreen">
-    <div class="card" id="menuOwnerManageCard"></div>
-    <div class="card">
-      <p class="form-section-title" style="margin-top:0">Tambah Menu Baru</p>
-      <label for="newMenuOwnerName">Nama Menu</label>
-      <input type="text" id="newMenuOwnerName" placeholder="Contoh: Coco Vanilla">
-      <div class="row2">
-        <div>
-          <label for="newMenuOwnerKategori">Kategori</label>
-          <select id="newMenuOwnerKategori"></select>
-        </div>
-        <div>
-          <label for="newMenuOwnerSub">Sub Kategori</label>
-          <select id="newMenuOwnerSub"></select>
-        </div>
-      </div>
-      <div class="row2">
-        <div>
-          <label for="newMenuOwnerHarga">Harga Outlet (Rp)</label>
-          <input type="text" id="newMenuOwnerHarga" inputmode="numeric" placeholder="Rp0">
-        </div>
-        <div>
-          <label for="newMenuOwnerHargaSpecial">Harga Special (Rp)</label>
-          <input type="text" id="newMenuOwnerHargaSpecial" inputmode="numeric" placeholder="Rp0">
-        </div>
-      </div>
-      <button class="primary" id="addMenuOwnerBtn" style="margin-bottom:16px;">Tambah Menu</button>
-    </div>
-    <p class="status" id="settingMenuStatusMsg"></p>
+    <button class="primary" id="saveStockBtn">Simpan Stock Awal</button>
+    <p class="status" id="stockStatusMsg"></p>
     <p style="text-align:center; font-size:11px; color:var(--ink-soft); margin-top:20px;">
       Versi aplikasi: <span id="appVersionLabel"></span>
     </p>
+  </section>
+
+  <!-- ===================== RIWAYAT ===================== -->
+  <section class="screen" id="riwayatScreen">
+    <div class="card">
+      <label for="riwayatRider">Filter Rider</label>
+      <select id="riwayatRider"><option value="">Semua Rider</option></select>
+      <label for="riwayatTanggal">Filter Tanggal</label>
+      <input type="date" id="riwayatTanggal">
+    </div>
+    <div id="riwayatList"></div>
+    <p class="status" id="riwayatStatusMsg"></p>
+  </section>
+
+  <!-- ===================== ACUAN STOCK ===================== -->
+  <section class="screen" id="acuanStockScreen">
+    <div class="card">
+      <label for="acuanRider">Pilih Rider</label>
+      <select id="acuanRider"><option value="">— Pilih Rider —</option></select>
+      <p style="font-size:11.5px; color:var(--ink-soft); margin:10px 0 0;" id="acuanPeriodeNote"></p>
+    </div>
+    <div id="acuanStockCard"></div>
+    <p class="status" id="acuanStockStatusMsg"></p>
+    <p style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:16px;">
+      Acuan = rata-rata Terjual (hari kerja saja, 4 pekan terakhir) × 1.2,
+      dibulatkan ke atas. Untuk Minuman, angka cup dikonversi jadi perkiraan
+      botol di sampingnya (1 botol = 8 cup, sisa 1-3 turun & sisa 4-7 naik)
+      — cuma info tambahan, bukan angka yang disimpan. Badge merah
+      "▲ +1 habis 2 hari" = 2 hari kerja terakhir (weekday/weekend ybs)
+      Stock Awal habis total (Sisa 0, bukan krn memang tidak di-stock) —
+      acuan otomatis naik 1. Badge biru "▼ -1 sisa banyak 2 hari" = 2 hari
+      kerja terakhir sisa-nya ≥ setengah Stock Awal (kurang dari separuh
+      laku) — acuan otomatis turun 1 (minimal tetap 1, tidak sampai 0).
+    </p>
+  </section>
+
+  <!-- ===================== HR ===================== -->
+  <section class="screen" id="hrScreen">
+    <div class="card" style="padding:10px 12px;">
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="pool-toggle-btn active" id="hrSubKehadiranBtn">Kehadiran</button>
+        <button type="button" class="pool-toggle-btn" id="hrSubGajiBtn">Gaji</button>
+        <button type="button" class="pool-toggle-btn" id="hrSubKaryawanBtn">Karyawan</button>
+      </div>
+    </div>
+
+    <div class="card" id="hrRiderBulanCard">
+      <label for="hrRider">Pilih Rider</label>
+      <select id="hrRider"><option value="">— Pilih Rider —</option></select>
+      <label for="hrBulan">Bulan</label>
+      <select id="hrBulan"></select>
+    </div>
+
+    <!-- Sub-tab Kehadiran -->
+    <div id="hrKehadiranPanel">
+      <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;" id="hrKehadiranNote"></p>
+      <div id="hrKehadiranCard"></div>
+      <p class="status" id="hrKehadiranStatusMsg"></p>
+    </div>
+
+    <!-- Sub-tab Gaji -->
+    <div id="hrGajiPanel" style="display:none;">
+      <div class="receipt" id="hrGajiCard"></div>
+      <p class="status" id="hrGajiStatusMsg"></p>
+      <p style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:16px;">
+        Perhitungan Gaji ini murni INSIGHT/dasar slip gaji manual — TIDAK
+        otomatis masuk ke Uang Keluar. Bonus Bulanan: total Cup+Cookies ≥
+        1.000 → Rp300.000, ≥ 2.000 → Rp500.000 (bukan tambahan, langsung
+        Rp500.000 total).
+      </p>
+    </div>
+
+    <!-- Sub-tab Karyawan -->
+    <div id="hrKaryawanPanel" style="display:none;">
+      <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">
+        Isi Tanggal Selesai Kerja utk rider yang sudah tidak aktif —
+        otomatis ditandai "Tidak Aktif" di dropdown Kehadiran/Gaji, biar
+        tidak bingung membedakan mana yang masih benar-benar kerja.
+      </p>
+      <div id="hrKaryawanCard"></div>
+      <p class="status" id="hrKaryawanStatusMsg"></p>
+    </div>
   </section>
 
 </main>
 
 <script>
 // ================== KONFIGURASI ==================
-// URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
+// PENTING: pakai URL Web App Apps Script YANG SAMA dengan Jeda Rider
+// (satu Google Sheet, satu backend, dua aplikasi).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-splitgaji-v5";
+const APP_VERSION = "2026-08-24-hrkaryawan-v2"; // ganti tiap update, buat cek device mana yg belum update
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
 const $ = (id) => document.getElementById(id);
-let kategoriSubkategoriMap = { "Minuman": ["Cup", "200 ml", "500 ml", "1 Liter"], "Cookies": ["Classic", "Signature", "Scoopable"] };
-function groupOrderList(){
-  // urutan grup gabungan Kategori+SubKategori, mis. [{kategori:"Minuman",sub:"Cup"}, ...]
-  const list = [];
-  Object.keys(kategoriSubkategoriMap).forEach(kat => {
-    kategoriSubkategoriMap[kat].forEach(sub => list.push({ kategori: kat, sub }));
-  });
-  return list;
-}
-function groupLabel(kategori, sub){ return `${kategori} - ${sub}`; }
-let menuOwnerData = [];
-let jenisProductList = [];
-let kategoriProductList = [];
-let satuanList = [];
-let kategoriModalAsetList = [];
-let subKategoriGajiList = [];
-let procCart = []; // array of {namaProduct, jenisProduct, kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock}
-let cart = {}; // { menuName: qty }
-let statusBayar = "Sudah Dibayar";
-let editingTransaksiId = null;
+let aturanData = {};
+let operasionalValue = 0;
+let menuData = [];
+let currentSubmissionId = null;
+let currentAmbilKomisi = "Harian";
+let currentOperasionalValue = 0;
+let _currentTanggalISO = "";
 
 function formatRupiah(n){ return "Rp" + Math.round(n || 0).toLocaleString("id-ID"); }
 function attachRupiahInput(input){
@@ -596,10 +405,6 @@ function attachRupiahInput(input){
 function parseRupiahInput(input){
   return parseInt(input.value.replace(/[^\d]/g, ""), 10) || 0;
 }
-function generateRequestId(){
-  return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
-}
-function localDateStr(d){ return d.toLocaleDateString("en-CA"); }
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -609,38 +414,15 @@ function showScreen(id){
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
     showScreen(btn.dataset.screen);
-    if(btn.dataset.screen === "belumDibayarScreen") loadBelumDibayar();
-    if(btn.dataset.screen === "jenisProductScreen") renderJenisProductList();
-    if(btn.dataset.screen === "kategoriProductScreen") renderKategoriProductList();
-    if(btn.dataset.screen === "procurementInquiryScreen") loadProcurementInquiry();
-    if(btn.dataset.screen === "procurementReportScreen") loadProcurementReport();
-    if(btn.dataset.screen === "penjualanReportScreen") loadPenjualanReport();
-    if(btn.dataset.screen === "modalAsetScreen") loadModalAset();
-    if(btn.dataset.screen === "satuanOwnerScreen") renderSatuanOwnerList();
-    if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
+    if(btn.dataset.screen === "stockScreen") loadStockScreen();
+    if(btn.dataset.screen === "riwayatScreen") loadRiwayat();
+    if(btn.dataset.screen === "acuanStockScreen") loadAcuanStock();
+    if(btn.dataset.screen === "hrScreen") loadHrTab();
   });
 });
-document.querySelectorAll(".group-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".group-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".tabs[id$='Group']").forEach(g => g.style.display = "none");
-    const group = $(btn.dataset.group);
-    group.style.display = "flex";
-    group.querySelector(".tab-btn").click(); // otomatis buka sub-tab pertama
-  });
-});
-
-function setTanggalHariIni(){
-  const today = new Date();
-  if(!$("tanggalInputOwner").value) $("tanggalInputOwner").value = localDateStr(today);
-  if(!$("procTanggal").value) $("procTanggal").value = localDateStr(today);
-}
-setTanggalHariIni();
-$("tanggalInputOwner").addEventListener("change", updateCartSummary);
 
 async function apiGet(params){
-  const qs = new URLSearchParams(params || {}).toString();
+  const qs = new URLSearchParams(params).toString();
   const res = await fetch(SCRIPT_URL + (qs ? "?" + qs : ""));
   if(!res.ok) throw new Error("Gagal memuat (HTTP " + res.status + ")");
   const data = await res.json().catch(() => { throw new Error("Respon server tidak valid"); });
@@ -658,1206 +440,773 @@ async function apiPost(payload){
   return data;
 }
 
-// ---------- Load data awal ----------
-async function loadOwnerInit(){
-  try{
-    const data = await apiGet({ action: "getOwnerInit" });
-    menuOwnerData = data.menuOwner || [];
-    jenisProductList = (data.jenisProductList || []).sort((a, b) => a.localeCompare(b, "id"));
-    kategoriProductList = (data.kategoriProductList || []).sort((a, b) => a.localeCompare(b, "id"));
-    satuanList = data.satuanList || [];
-    kategoriModalAsetList = data.kategoriModalAsetList || [];
-    subKategoriGajiList = data.subKategoriGajiList || [];
-    $("modalAsetKategori").innerHTML = '<option value="">— Pilih —</option>' +
-      kategoriModalAsetList.map(k => `<option value="${k}">${k}</option>`).join("");
-    if(data.kategoriSubkategoriMap) kategoriSubkategoriMap = data.kategoriSubkategoriMap;
-    $("customerOptions").innerHTML = (data.customerList || []).map(c => `<option value="${c}">`).join("");
-    $("namaProductOptions").innerHTML = (data.namaProductList || []).map(n => `<option value="${n}">`).join("");
-    populateSubKategoriDropdown();
+// ---------- PIN Gate ----------
+// PIN SENGAJA tidak disimpan ke localStorage -- setiap kali app dibuka lagi
+// (termasuk kalau browser "ingat" tab-nya), harus ketik PIN ulang. PIN cuma
+// disimpan di memori (variabel biasa) selama sesi ini masih terbuka, dipakai
+// utk aksi2 lain yg butuh PIN (Simpan Perubahan, Hapus, Set Stock Awal) tanpa
+// perlu minta PIN berkali-kali DALAM sesi yg sama.
+let currentPin = "";
+function getPin(){ return currentPin; }
 
-    const savedPenjual = localStorage.getItem("nama_penjual_owner") || "";
-    const penjualSelect = $("penjualInput");
-    penjualSelect.innerHTML = '<option value="">— Pilih —</option>' +
-      (data.penjualList || []).map(p => `<option value="${p}">${p}</option>`).join("");
-    if(savedPenjual) penjualSelect.value = savedPenjual;
-
-    $("procJenis").innerHTML = '<option value="">— Pilih —</option>' +
-      jenisProductList.map(j => `<option value="${j}">${j}</option>`).join("");
-    $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
-      kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
-    $("procInquiryFilter").innerHTML = '<option value="">Semua Kategori</option>' +
-      kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
-    $("procSatuanPurchase").innerHTML = '<option value="">— Pilih —</option>' +
-      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
-    $("procSatuanStock").innerHTML = '<option value="">— Pilih —</option>' +
-      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
-
-    localStorage.setItem("menuOwner_cache", JSON.stringify(menuOwnerData));
-    localStorage.setItem("jenisProduct_cache", JSON.stringify(jenisProductList));
-  }catch(e){
-    const cachedMenu = localStorage.getItem("menuOwner_cache");
-    const cachedJenis = localStorage.getItem("jenisProduct_cache");
-    if(cachedMenu) menuOwnerData = JSON.parse(cachedMenu);
-    if(cachedJenis) jenisProductList = JSON.parse(cachedJenis);
-    $("penjualanStatusMsg").textContent = "Gagal memuat data awal: " + e.message;
-    $("penjualanStatusMsg").className = "status err";
+$("pinSubmitBtn").addEventListener("click", async () => {
+  const pin = $("pinInput").value.trim();
+  if(!pin){
+    $("pinStatusMsg").textContent = "Masukkan PIN dulu";
+    $("pinStatusMsg").className = "status err";
+    return;
   }
-  renderMenuOwnerList();
-}
-$("penjualInput").addEventListener("change", () => {
-  localStorage.setItem("nama_penjual_owner", $("penjualInput").value);
+  $("pinSubmitBtn").disabled = true;
+  $("pinStatusMsg").textContent = "Memeriksa...";
+  $("pinStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "verifyPin", pin });
+    currentPin = pin;
+    await afterLogin();
+  }catch(e){
+    $("pinStatusMsg").textContent = e.message || "PIN salah";
+    $("pinStatusMsg").className = "status err";
+  }finally{
+    $("pinSubmitBtn").disabled = false;
+  }
 });
 
-// ---------- Render daftar menu (Penjualan) ----------
-function populateSubKategoriDropdown(){
-  const katSelect = $("newMenuOwnerKategori");
-  const subSelect = $("newMenuOwnerSub");
-  const kategoris = Object.keys(kategoriSubkategoriMap);
-  katSelect.innerHTML = kategoris.map(k => `<option value="${k}">${k}</option>`).join("");
-  function refreshSub(){
-    const subs = kategoriSubkategoriMap[katSelect.value] || [];
-    subSelect.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join("");
-  }
-  katSelect.onchange = refreshSub;
-  refreshSub();
+async function afterLogin(){
+  $("adminTabs").style.display = "flex";
+  showScreen("listScreen");
+  await loadFilterOptions();
+  await loadSubmissions();
 }
 
-function renderMenuOwnerList(){
-  const card = $("menuOwnerListCard");
+// ---------- Filter options (rider, aturan, operasional) ----------
+async function loadFilterOptions(){
+  try{
+    const data = await apiGet({});
+    aturanData = data.aturan || {};
+    operasionalValue = data.operasional || 0;
+    menuData = data.menu || [];
+    const riderOptions = (data.riders || []).map(r => `<option value="${r}">${r}</option>`).join("");
+    $("filterRider").innerHTML = '<option value="">Semua Rider</option>' + riderOptions;
+    $("stockRider").innerHTML = '<option value="">— Pilih Rider —</option>' + riderOptions;
+    $("riwayatRider").innerHTML = '<option value="">Semua Rider</option>' + riderOptions;
+    $("acuanRider").innerHTML = '<option value="">— Pilih Rider —</option>' + riderOptions;
+    $("hrRider").innerHTML = '<option value="">— Pilih Rider —</option>' + riderOptions;
+    if(!$("stockTanggal").value) $("stockTanggal").value = new Date().toLocaleDateString("en-CA");
+  }catch(e){
+    $("listStatusMsg").textContent = "Gagal memuat data awal: " + e.message;
+    $("listStatusMsg").className = "status err";
+  }
+}
+
+$("filterRider").addEventListener("change", loadSubmissions);
+$("filterTanggal").addEventListener("change", loadSubmissions);
+$("stockRider").addEventListener("change", loadStockScreen);
+$("stockTanggal").addEventListener("change", loadStockScreen);
+$("riwayatRider").addEventListener("change", loadRiwayat);
+$("riwayatTanggal").addEventListener("change", loadRiwayat);
+$("clearFilterBtn").addEventListener("click", () => {
+  $("filterRider").value = "";
+  $("filterTanggal").value = "";
+  loadSubmissions();
+});
+
+// ---------- List submissions ----------
+async function loadSubmissions(){
+  $("listStatusMsg").textContent = "Memuat...";
+  $("listStatusMsg").className = "status";
+  try{
+    const params = { action: "listSubmissions" };
+    if($("filterRider").value) params.rider = $("filterRider").value;
+    if($("filterTanggal").value) params.tanggal = $("filterTanggal").value;
+    const data = await apiGet(params);
+    renderSubmissionList(data.submissions || []);
+    $("listStatusMsg").textContent = "";
+  }catch(e){
+    $("listStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("listStatusMsg").className = "status err";
+  }
+}
+
+function renderSubmissionList(list){
+  const container = $("submissionList");
+  if(!list.length){
+    container.innerHTML = '<p class="empty-note">Tidak ada data untuk filter ini.</p>';
+    return;
+  }
+  container.innerHTML = list.map(s => {
+    const tanggalStr = new Date(s.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    return `
+      <div class="sub-item" data-id="${s.id}">
+        <div class="top">
+          <span class="rider">${s.rider}</span>
+          <span class="tanggal">${tanggalStr}</span>
+        </div>
+        <div class="bottom">
+          <span class="label">Total: <span class="rp">${formatRupiah(s.totalPenjualan)}</span></span>
+          <span class="label">Setoran: <span class="rp">${formatRupiah(s.setoranCash)}</span></span>
+        </div>
+      </div>`;
+  }).join("");
+  container.querySelectorAll(".sub-item").forEach(el => {
+    el.addEventListener("click", () => openSubmission(el.dataset.id));
+  });
+}
+
+// ---------- Set Stock Awal ----------
+async function loadStockScreen(){
+  const rider = $("stockRider").value;
+  const tanggal = $("stockTanggal").value;
+  const card = $("stockItemsCard");
+  if(!rider || !tanggal){
+    card.innerHTML = '<p class="empty-note">Pilih rider & tanggal dulu di atas.</p>';
+    $("stockSummaryCard").style.display = "none";
+    return;
+  }
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  let existing = {};
+  try{
+    const data = await apiGet({ action: "getSession", rider, tanggal });
+    existing = data.items || {};
+  }catch(e){
+    // belum ada sesi hari itu -> semua mulai dari 0, itu wajar
+  }
+  if(!menuData.length){
+    card.innerHTML = '<p class="empty-note">Data menu belum termuat, coba buka lagi tab ini.</p>';
+    return;
+  }
+  const groups = groupItemsBySubkategori(menuData.map(m => ({
+    menu: m.menu, kategori: m.kategori, subKategori: m.subKategori,
+    satuan: m.satuan, konversi: m.konversi, harga: m.harga
+  })));
   let html = "";
-  groupOrderList().forEach(({kategori, sub}) => {
-    const items = menuOwnerData.filter(m => m.kategori === kategori && (m.subKategori || "") === sub);
-    if(!items.length) return;
-    const groupKey = kategori + "|" + sub;
-    const stored = localStorage.getItem("owner_group_collapsed:" + groupKey);
-    const collapsed = stored === null ? true : stored === "1";
-    html += `
-      <div class="menu-group${collapsed ? ' collapsed' : ''}" data-group="${groupKey}">
-        <button type="button" class="menu-group-title">
-          <span>${groupLabel(kategori, sub)}</span>
-          <span class="toggle-icon">${collapsed ? '+' : '−'}</span>
-        </button>
-        <div class="menu-group-items">`;
+  SUBKATEGORI_ORDER.forEach(sub => {
+    const items = groups[sub];
+    if(!items || !items.length) return;
+    html += `<p class="item-group-title">${SUBKATEGORI_LABEL[sub]}</p>`;
     items.forEach(m => {
+      const satuan = m.satuan || (m.kategori === "Cookies" ? "pcs" : "cup");
+      const info = existing[m.menu];
+      const stockAwal = info && info.stockAwal ? info.stockAwal : 0;
       html += `
-        <div class="menu-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
-             data-harga="${m.harga}" data-hargaspecial="${m.hargaSpecial}" data-satuan="${m.satuan}" data-tier="special">
-          <div class="menu-item-name">${m.menu}</div>
-          <div class="menu-item-harga">Outlet ${formatRupiah(m.harga)} · Special ${formatRupiah(m.hargaSpecial)} / ${m.satuan}</div>
-          <div class="price-toggle">
-            <button type="button" class="price-btn active" data-tier="special">Special</button>
-            <button type="button" class="price-btn" data-tier="outlet">Outlet</button>
-          </div>
-          <div class="stepper">
-            <button type="button" class="step-btn minus">−</button>
-            <input type="number" class="qty" inputmode="numeric" value="0" min="0">
-            <button type="button" class="step-btn plus">+</button>
-          </div>
-          <label style="margin:8px 0 4px; font-size:11.5px;">Diskon item ini (Rp)</label>
-          <input type="text" class="itemDiskon" inputmode="numeric" placeholder="Rp0">
-          <div class="menu-item-calc">Subtotal: <span class="val subtotal" style="margin-left:4px;">Rp0</span></div>
+        <div class="edit-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
+             data-sub="${m.subKategori || ''}" data-satuan="${satuan}"
+             data-konversi="${m.konversi || 1}" data-harga="${m.harga}">
+          <div class="edit-item-name">${m.menu}</div>
+          <div class="edit-item-harga">${formatRupiah(m.harga)} / ${satuan}</div>
+          <label style="margin:8px 0 4px;">Stock Awal (${satuan})</label>
+          <input type="number" class="stockAwalInput" value="${stockAwal}" min="0">
         </div>`;
     });
-    html += `</div></div>`;
   });
-  card.innerHTML = html || "<p>Belum ada menu. Tambahkan lewat tab \"Setting Menu\".</p>";
+  card.innerHTML = html;
+  card.querySelectorAll(".stockAwalInput").forEach(input => {
+    input.addEventListener("input", updateStockSummary);
+  });
+  updateStockSummary();
+}
 
-  card.querySelectorAll(".menu-group-title").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const group = btn.closest(".menu-group");
-      const kat = group.dataset.group;
-      const nowCollapsed = group.classList.toggle("collapsed");
-      btn.querySelector(".toggle-icon").textContent = nowCollapsed ? "+" : "−";
-      localStorage.setItem("owner_group_collapsed:" + kat, nowCollapsed ? "1" : "0");
+function updateStockSummary(){
+  const summaryCard = $("stockSummaryCard");
+  const items = document.querySelectorAll("#stockItemsCard .edit-item");
+  if(!items.length){ summaryCard.style.display = "none"; return; }
+  let minumanCup = 0, cookiesPcs = 0;
+  items.forEach(item => {
+    const stockAwal = parseFloat(item.querySelector(".stockAwalInput").value) || 0;
+    const konversi = parseFloat(item.dataset.konversi) || 1;
+    if(item.dataset.kategori === "Cookies") cookiesPcs += stockAwal;
+    else minumanCup += stockAwal * konversi;
+  });
+  $("stockSummaryMinuman").textContent = minumanCup + " cup";
+  $("stockSummaryCookies").textContent = cookiesPcs + " pcs";
+  summaryCard.style.display = "block";
+}
+
+// ---------- Riwayat ----------
+// ---------- Acuan Stock ----------
+async function loadAcuanStock(){
+  const rider = $("acuanRider").value;
+  const card = $("acuanStockCard");
+  if(!rider){
+    card.innerHTML = "";
+    $("acuanPeriodeNote").textContent = "";
+    $("acuanStockStatusMsg").textContent = "";
+    return;
+  }
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("acuanStockStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getAcuanStock", rider });
+    const startStr = new Date(data.startDate + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short" });
+    const endStr = new Date(data.endDate + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    $("acuanPeriodeNote").textContent =
+      `Periode: ${startStr} – ${endStr} · ${data.jumlahHariWeekday} hari kerja weekday, ${data.jumlahHariWeekend} hari kerja weekend`;
+    renderAcuanStock(data.items);
+  }catch(e){
+    card.innerHTML = "";
+    $("acuanStockStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("acuanStockStatusMsg").className = "status err";
+  }
+}
+$("acuanRider").addEventListener("change", loadAcuanStock);
+
+function renderAcuanStock(items){
+  const card = $("acuanStockCard");
+  const groups = groupItemsBySubkategori(items.map(it => ({
+    menu: it.menu, kategori: it.kategori, subKategori: it.subKategori
+  })));
+  const byMenu = {};
+  items.forEach(it => byMenu[it.menu] = it);
+
+  let html = "";
+  SUBKATEGORI_ORDER.forEach(sub => {
+    const groupItems = groups[sub];
+    if(!groupItems || !groupItems.length) return;
+    html += `<p class="item-group-title">${SUBKATEGORI_LABEL[sub]}</p>`;
+    groupItems.forEach(g => {
+      const it = byMenu[g.menu];
+      const botolWd = it.botolWeekday !== null ? ` <span style="font-weight:600; font-size:15px; color:var(--ink-soft);">(≈ ${it.botolWeekday} botol)</span>` : "";
+      const botolWe = it.botolWeekend !== null ? ` <span style="font-weight:600; font-size:15px; color:var(--ink-soft);">(≈ ${it.botolWeekend} botol)</span>` : "";
+      const bumpBadge = '<span style="display:inline-block; margin-left:6px; font-size:11px; font-weight:700; color:#fff; background:var(--danger); padding:1px 7px; border-radius:8px; vertical-align:middle;">▲ +1 habis 2 hari</span>';
+      const turunBadge = '<span style="display:inline-block; margin-left:6px; font-size:11px; font-weight:700; color:#fff; background:#2E6E8E; padding:1px 7px; border-radius:8px; vertical-align:middle;">▼ -1 sisa banyak 2 hari</span>';
+      const bumpWd = it.bumpWeekday ? bumpBadge : (it.turunWeekday ? turunBadge : "");
+      const bumpWe = it.bumpWeekend ? bumpBadge : (it.turunWeekend ? turunBadge : "");
+      html += `
+        <div class="acuan-item" data-menu="${it.menu}">
+          <div class="acuan-item-name">${it.menu}</div>
+          <div class="acuan-cols">
+            <div>
+              <div class="acuan-col-label">Weekday</div>
+              <div class="acuan-col-avg">Rata-rata: ${it.wdAvg.toFixed(1)}</div>
+              <div class="acuan-col-value">${it.acuanWeekday}${botolWd}${bumpWd}</div>
+            </div>
+            <div>
+              <div class="acuan-col-label">Weekend</div>
+              <div class="acuan-col-avg">Rata-rata: ${it.weAvg.toFixed(1)}</div>
+              <div class="acuan-col-value">${it.acuanWeekend}${botolWe}${bumpWe}</div>
+            </div>
+          </div>
+        </div>`;
     });
   });
+  card.innerHTML = html || "<p>Belum ada menu Cup/Cookies.</p>";
+}
 
-  card.querySelectorAll(".menu-item").forEach(item => {
-    const qtyInput = item.querySelector(".qty");
-    const subtotalEl = item.querySelector(".subtotal");
-    const diskonInput = item.querySelector(".itemDiskon");
-    const menu = item.dataset.menu;
-    attachRupiahInput(diskonInput);
-    function recalc(){
-      const qty = Math.max(0, parseFloat(qtyInput.value) || 0);
-      qtyInput.value = qty;
-      const itemDiskon = parseRupiahInput(diskonInput);
-      const subtotalKotor = qty * getItemHarga(item);
-      subtotalEl.textContent = formatRupiah(Math.max(0, subtotalKotor - itemDiskon));
-      if(qty > 0) cart[menu] = qty; else delete cart[menu];
-      updateCartSummary();
+// ---------- HR ----------
+let hrSubTabAktif = "kehadiran"; // "kehadiran", "gaji", atau "karyawan"
+let daftarKaryawanCache = []; // [{rider, tanggalMulai, tanggalSelesai}]
+
+function bulanOptionsTerakhir(n){
+  // Bangun n bulan terakhir (termasuk bulan ini), format value "yyyy-MM"
+  const opts = [];
+  const now = new Date();
+  for(let i = 0; i < n; i++){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const label = d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    opts.push({ key, label });
+  }
+  return opts;
+}
+function populateHrBulan(){
+  const select = $("hrBulan");
+  if(select.options.length) return; // isi sekali saja
+  const opts = bulanOptionsTerakhir(12);
+  select.innerHTML = opts.map(o => `<option value="${o.key}">${o.label}</option>`).join("");
+}
+function isKaryawanTidakAktif(rider){
+  const k = daftarKaryawanCache.find(x => x.rider === rider);
+  if(!k || !k.tanggalSelesai) return false;
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  return k.tanggalSelesai <= todayStr;
+}
+async function refreshDaftarKaryawanCache(){
+  try{
+    const data = await apiGet({ action: "getDaftarKaryawan" });
+    daftarKaryawanCache = data.karyawan || [];
+    // Tandai opsi rider yg tidak aktif di dropdown hrRider
+    document.querySelectorAll('#hrRider option').forEach(opt => {
+      if(!opt.value) return;
+      const baseLabel = opt.value;
+      opt.textContent = isKaryawanTidakAktif(opt.value) ? baseLabel + " (Tidak Aktif)" : baseLabel;
+    });
+  }catch(e){ /* diam saja, tidak fatal kalau gagal */ }
+}
+
+function loadHrTab(){
+  populateHrBulan();
+  refreshDaftarKaryawanCache();
+  if(hrSubTabAktif === "karyawan") loadKaryawan();
+  else if($("hrRider").value && $("hrBulan").value) refreshHrPanel();
+}
+$("hrRider").addEventListener("change", refreshHrPanel);
+$("hrBulan").addEventListener("change", refreshHrPanel);
+$("hrSubKehadiranBtn").addEventListener("click", () => switchHrSubTab("kehadiran"));
+$("hrSubGajiBtn").addEventListener("click", () => switchHrSubTab("gaji"));
+$("hrSubKaryawanBtn").addEventListener("click", () => switchHrSubTab("karyawan"));
+
+function switchHrSubTab(sub){
+  hrSubTabAktif = sub;
+  $("hrSubKehadiranBtn").classList.toggle("active", sub === "kehadiran");
+  $("hrSubGajiBtn").classList.toggle("active", sub === "gaji");
+  $("hrSubKaryawanBtn").classList.toggle("active", sub === "karyawan");
+  $("hrKehadiranPanel").style.display = sub === "kehadiran" ? "block" : "none";
+  $("hrGajiPanel").style.display = sub === "gaji" ? "block" : "none";
+  $("hrKaryawanPanel").style.display = sub === "karyawan" ? "block" : "none";
+  $("hrRiderBulanCard").style.display = sub === "karyawan" ? "none" : "block";
+  if(sub === "karyawan") loadKaryawan();
+  else refreshHrPanel();
+}
+
+function refreshHrPanel(){
+  const rider = $("hrRider").value, bulan = $("hrBulan").value;
+  if(!rider || !bulan) return;
+  if(hrSubTabAktif === "kehadiran") loadKehadiran(rider, bulan);
+  else if(hrSubTabAktif === "gaji") loadGaji(rider, bulan);
+}
+
+// ---- Sub-tab Karyawan ----
+async function loadKaryawan(){
+  const card = $("hrKaryawanCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("hrKaryawanStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getDaftarKaryawan" });
+    daftarKaryawanCache = data.karyawan || [];
+    renderKaryawan();
+  }catch(e){
+    card.innerHTML = "";
+    $("hrKaryawanStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("hrKaryawanStatusMsg").className = "status err";
+  }
+}
+function renderKaryawan(){
+  const card = $("hrKaryawanCard");
+  if(!daftarKaryawanCache.length){
+    card.innerHTML = "<p>Belum ada rider.</p>";
+    return;
+  }
+  card.innerHTML = daftarKaryawanCache.map(k => {
+    const tidakAktif = isKaryawanTidakAktif(k.rider);
+    return `
+      <div class="karyawan-row" data-rider="${k.rider}">
+        <div class="karyawan-row-name">${k.rider}${tidakAktif ? '<span class="karyawan-badge-inaktif">Tidak Aktif</span>' : ''}</div>
+        <div class="karyawan-dates">
+          <div>
+            <label>Tanggal Mulai Kerja</label>
+            <input type="date" class="karyawanMulai" value="${k.tanggalMulai || ''}">
+          </div>
+          <div>
+            <label>Tanggal Selesai Kerja</label>
+            <input type="date" class="karyawanSelesai" value="${k.tanggalSelesai || ''}">
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+
+  card.querySelectorAll(".karyawan-row").forEach(row => {
+    const rider = row.dataset.rider;
+    const mulaiInput = row.querySelector(".karyawanMulai");
+    const selesaiInput = row.querySelector(".karyawanSelesai");
+    async function simpan(){
+      $("hrKaryawanStatusMsg").textContent = "Menyimpan...";
+      $("hrKaryawanStatusMsg").className = "status";
+      try{
+        await apiPost({
+          action: "updateStatusKaryawan", rider,
+          tanggalMulai: mulaiInput.value, tanggalSelesai: selesaiInput.value
+        });
+        $("hrKaryawanStatusMsg").textContent = "Tersimpan ✓";
+        $("hrKaryawanStatusMsg").className = "status ok";
+        const k = daftarKaryawanCache.find(x => x.rider === rider);
+        if(k){ k.tanggalMulai = mulaiInput.value; k.tanggalSelesai = selesaiInput.value; }
+        renderKaryawan();
+      }catch(e){
+        $("hrKaryawanStatusMsg").textContent = "Gagal simpan: " + e.message;
+        $("hrKaryawanStatusMsg").className = "status err";
+      }
     }
-    qtyInput.addEventListener("input", recalc);
-    diskonInput.addEventListener("input", recalc);
-    item.querySelector(".step-btn.plus").addEventListener("click", () => {
-      qtyInput.value = (parseFloat(qtyInput.value) || 0) + 1;
-      recalc();
+    mulaiInput.addEventListener("change", simpan);
+    selesaiInput.addEventListener("change", simpan);
+  });
+}
+
+// ---- Sub-tab Kehadiran ----
+async function loadKehadiran(rider, bulan){
+  const card = $("hrKehadiranCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("hrKehadiranStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getKehadiranRider", rider, bulan });
+    if(!data.tanggalMulai){
+      card.innerHTML = "";
+      $("hrKehadiranNote").textContent = `${rider} belum pernah submit sama sekali, belum ada data kehadiran.`;
+      return;
+    }
+    const mulaiLabel = new Date(data.tanggalMulai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    $("hrKehadiranNote").textContent = `Mulai kerja: ${mulaiLabel}. Hari "Outstanding" perlu diklasifikasi manual.`;
+    renderKehadiran(data.days, rider);
+  }catch(e){
+    card.innerHTML = "";
+    $("hrKehadiranStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("hrKehadiranStatusMsg").className = "status err";
+  }
+}
+function renderKehadiran(days, rider){
+  const card = $("hrKehadiranCard");
+  if(!days.length){
+    card.innerHTML = '<p class="empty-note">Belum ada hari yang berlaku di bulan ini.</p>';
+    return;
+  }
+  const badgeClass = { "Hadir": "hr-badge-hadir", "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit" };
+  card.innerHTML = days.map(d => {
+    const tanggalLabel = new Date(d.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"short", day:"numeric", month:"short" });
+    if(d.status === "Outstanding"){
+      return `
+        <div class="hr-day-row" data-tanggal="${d.tanggal}">
+          <span class="hr-day-date">${tanggalLabel}</span>
+          <div class="hr-outstanding-btns">
+            <button type="button" data-status="Absen">Absen</button>
+            <button type="button" data-status="Libur">Libur</button>
+            <button type="button" data-status="Sakit">Sakit</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="hr-day-row">
+        <span class="hr-day-date">${tanggalLabel}</span>
+        <span class="hr-day-badge ${badgeClass[d.status] || ''}">${d.status}</span>
+      </div>`;
+  }).join("");
+
+  card.querySelectorAll(".hr-outstanding-btns button").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const row = btn.closest(".hr-day-row");
+      const tanggal = row.dataset.tanggal;
+      const status = btn.dataset.status;
+      btn.parentElement.querySelectorAll("button").forEach(b => b.disabled = true);
+      try{
+        await apiPost({ action: "setAbsensi", rider, tanggal, status });
+        const tanggalLabel = new Date(tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"short", day:"numeric", month:"short" });
+        const badgeClass = { "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit" };
+        row.innerHTML = `<span class="hr-day-date">${tanggalLabel}</span><span class="hr-day-badge ${badgeClass[status]}">${status}</span>`;
+      }catch(e){
+        $("hrKehadiranStatusMsg").textContent = "Gagal simpan: " + e.message;
+        $("hrKehadiranStatusMsg").className = "status err";
+        btn.parentElement.querySelectorAll("button").forEach(b => b.disabled = false);
+      }
     });
-    item.querySelector(".step-btn.minus").addEventListener("click", () => {
-      qtyInput.value = Math.max(0, (parseFloat(qtyInput.value) || 0) - 1);
-      recalc();
+  });
+}
+
+// ---- Sub-tab Gaji ----
+async function loadGaji(rider, bulan){
+  const card = $("hrGajiCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("hrGajiStatusMsg").textContent = "";
+  try{
+    const g = await apiGet({ action: "getGajiRider", rider, bulan });
+    const bulanLabel = new Date(bulan + "-01T00:00:00").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    card.innerHTML = `
+      <h2>Slip Gaji — ${rider}</h2>
+      <p class="meta" style="text-align:center; margin-top:-8px;">${bulanLabel}</p>
+      <div class="receipt-line"><span>Jumlah Hari Hadir</span><span class="val">${g.jumlahHariHadir} hari</span></div>
+      <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
+      <div class="receipt-line"><span>Total Insentif Harian</span><span class="val">${formatRupiah(g.totalOperasional)}</span></div>
+      <div class="receipt-line"><span>Total Bonus Harian (Komisi)</span><span class="val">${formatRupiah(g.totalKomisi)}</span></div>
+      <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
+      <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
+      <div class="receipt-line total"><span>Total Gaji Bulan Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
+    `;
+  }catch(e){
+    card.innerHTML = "";
+    $("hrGajiStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("hrGajiStatusMsg").className = "status err";
+  }
+}
+
+async function loadRiwayat(){
+  const container = $("riwayatList");
+  container.innerHTML = '<p class="empty-note">Memuat...</p>';
+  try{
+    const params = { action: "getRiwayat" };
+    if($("riwayatRider").value) params.rider = $("riwayatRider").value;
+    if($("riwayatTanggal").value) params.tanggal = $("riwayatTanggal").value;
+    const data = await apiGet(params);
+    renderRiwayat(data.riwayat || []);
+    $("riwayatStatusMsg").textContent = "";
+  }catch(e){
+    container.innerHTML = "";
+    $("riwayatStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("riwayatStatusMsg").className = "status err";
+  }
+}
+
+const AKSI_LABEL = {
+  adjustItem: "Tap +/-", setItemField: "Ketik langsung",
+  setStockAwalBatch: "Set Stock Awal (Admin)", updateSubmission: "Edit Data (Admin)"
+};
+
+function renderRiwayat(list){
+  const container = $("riwayatList");
+  if(!list.length){
+    container.innerHTML = '<p class="empty-note">Belum ada riwayat perubahan untuk filter ini.</p>';
+    return;
+  }
+  container.innerHTML = list.map(r => {
+    const waktuStr = new Date(r.waktu).toLocaleString("id-ID", {
+      day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"
     });
-    item.querySelectorAll(".price-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        item.dataset.tier = btn.dataset.tier;
-        item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === btn.dataset.tier));
-        recalc();
+    const fieldLabel = r.field === "terjual" ? "Terjual" : "Stock Awal";
+    return `
+      <div class="riwayat-item">
+        <div class="top">
+          <span class="detail">${r.rider} · ${r.menu}</span>
+          <span class="aksi">${AKSI_LABEL[r.aksi] || r.aksi}</span>
+        </div>
+        <div class="waktu">${waktuStr} · ${r.sumber} · tgl data ${r.tanggal}</div>
+        <div class="perubahan">${fieldLabel}: ${r.nilaiLama} → ${r.nilaiBaru}</div>
+      </div>`;
+  }).join("");
+}
+
+$("saveStockBtn").addEventListener("click", async () => {
+  const rider = $("stockRider").value;
+  const tanggal = $("stockTanggal").value;
+  if(!rider || !tanggal){
+    $("stockStatusMsg").textContent = "Pilih rider & tanggal dulu";
+    $("stockStatusMsg").className = "status err";
+    return;
+  }
+  const items = [];
+  document.querySelectorAll("#stockItemsCard .edit-item").forEach(row => {
+    items.push({
+      menu: row.dataset.menu, kategori: row.dataset.kategori,
+      subKategori: row.dataset.sub, satuan: row.dataset.satuan,
+      konversi: parseFloat(row.dataset.konversi) || 1,
+      harga: parseFloat(row.dataset.harga) || 0,
+      stockAwal: parseFloat(row.querySelector(".stockAwalInput").value) || 0
+    });
+  });
+  $("saveStockBtn").disabled = true;
+  $("stockStatusMsg").textContent = "Menyimpan...";
+  $("stockStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "setStockAwalBatch", pin: getPin(), rider, tanggal, items });
+    $("stockStatusMsg").textContent = "Stock Awal tersimpan ✓";
+    $("stockStatusMsg").className = "status ok";
+  }catch(e){
+    $("stockStatusMsg").textContent = "Gagal menyimpan: " + e.message;
+    $("stockStatusMsg").className = "status err";
+  }finally{
+    $("saveStockBtn").disabled = false;
+  }
+});
+const SUBKATEGORI_ORDER = ["Cup", "Cookies", "500 ml", "1 Liter"];
+const SUBKATEGORI_LABEL = {
+  "Cup": "Minuman - Cup",
+  "500 ml": "Minuman - 500 ml (botol)",
+  "1 Liter": "Minuman - 1 Liter (botol)",
+  "Cookies": "Cookies (pcs)"
+};
+function groupItemsBySubkategori(items){
+  const groups = {};
+  SUBKATEGORI_ORDER.forEach(sub => { groups[sub] = []; });
+  items.forEach(item => {
+    const sub = item.kategori === "Cookies" ? "Cookies" : (item.subKategori || "Cup");
+    if(!groups[sub]) groups[sub] = [];
+    groups[sub].push(item);
+  });
+  return groups;
+}
+
+async function openSubmission(id){
+  $("editStatusMsg").textContent = "Memuat data...";
+  $("editStatusMsg").className = "status";
+  showScreen("editScreen");
+  try{
+    const data = await apiGet({ action: "getSubmission", id });
+    currentSubmissionId = id;
+    _currentTanggalISO = data.tanggal;
+    currentAmbilKomisi = data.ambilKomisi || "Harian";
+    currentOperasionalValue = (data.operasional || data.operasional === 0) ? data.operasional : operasionalValue;
+    const tanggalStr = new Date(data.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+    $("editRiderTanggal").textContent = `${data.rider} · ${tanggalStr}`;
+
+    $("editModal").value = data.modal ? "Rp" + Number(data.modal).toLocaleString("id-ID") : "";
+    $("editQris").value = data.qris ? "Rp" + Number(data.qris).toLocaleString("id-ID") : "";
+
+    const itemsCard = $("editItemsCard");
+    const groups = groupItemsBySubkategori(data.items);
+    let html = "";
+    SUBKATEGORI_ORDER.forEach(sub => {
+      const items = groups[sub];
+      if(!items || !items.length) return;
+      html += `<p class="item-group-title">${SUBKATEGORI_LABEL[sub]}</p>`;
+      items.forEach((item, idx) => {
+        html += `
+          <div class="edit-item" data-idx="${idx}" data-menu="${item.menu}" data-kategori="${item.kategori}"
+               data-sub="${item.subKategori || ''}" data-satuan="${item.satuan}"
+               data-konversi="${item.konversi || 1}" data-harga="${item.harga}">
+            <div class="edit-item-name">${item.menu}</div>
+            <div class="edit-item-harga">${formatRupiah(item.harga)} / ${item.satuan}</div>
+            <div class="row2">
+              <div>
+                <label style="margin:0 0 4px;">Stock Awal (${item.satuan})</label>
+                <input type="number" class="stockAwal" value="${item.stockAwal}" min="0">
+              </div>
+              <div>
+                <label style="margin:0 0 4px;">Terjual (${item.satuan})</label>
+                <input type="number" class="terjual" value="${item.terjual}" min="0">
+              </div>
+            </div>
+            <div class="edit-item-calc">
+              <span>Sisa: <span class="val sisaVal">${item.stockAwal - item.terjual}</span> ${item.satuan}</span>
+              <span>Total: <span class="val totalVal">${formatRupiah(item.terjual * item.harga)}</span></span>
+            </div>
+          </div>`;
       });
     });
-  });
-  updateCartSummary();
-}
-function getItemHarga(item){
-  return item.dataset.tier === "special"
-    ? (parseFloat(item.dataset.hargaspecial) || 0)
-    : (parseFloat(item.dataset.harga) || 0);
+    itemsCard.innerHTML = html;
+
+    itemsCard.querySelectorAll(".edit-item").forEach(row => {
+      const stockInput = row.querySelector(".stockAwal");
+      const terjualInput = row.querySelector(".terjual");
+      const sisaVal = row.querySelector(".sisaVal");
+      const totalVal = row.querySelector(".totalVal");
+      const harga = parseFloat(row.dataset.harga) || 0;
+      function recalc(){
+        const s = parseFloat(stockInput.value) || 0;
+        const t = parseFloat(terjualInput.value) || 0;
+        sisaVal.textContent = s - t;
+        totalVal.textContent = formatRupiah(t * harga);
+        updateEditSummary();
+      }
+      stockInput.addEventListener("input", recalc);
+      terjualInput.addEventListener("input", recalc);
+    });
+
+    updateEditSummary();
+    $("editStatusMsg").textContent = "";
+  }catch(e){
+    $("editStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("editStatusMsg").className = "status err";
+  }
 }
 
-function collectCartItems(){
+function hitungKomisi(unit, aturan){
+  if(!aturan) return 0;
+  const batas = aturan.batas || 0;
+  const t1 = Math.min(unit, batas) * (aturan.tarif1 || 0);
+  const t2 = Math.max(unit - batas, 0) * (aturan.tarif2 || 0);
+  return t1 + t2;
+}
+
+function updateEditSummary(){
+  let rpMinuman = 0, rpCookies = 0, cupMinuman = 0, pcsCookies = 0;
+  document.querySelectorAll("#editItemsCard .edit-item").forEach(row => {
+    const t = parseFloat(row.querySelector(".terjual").value) || 0;
+    const harga = parseFloat(row.dataset.harga) || 0;
+    const konversi = parseFloat(row.dataset.konversi) || 1;
+    const rp = t * harga;
+    if(row.dataset.kategori === "Minuman"){ rpMinuman += rp; cupMinuman += t * konversi; }
+    else { rpCookies += rp; pcsCookies += t; }
+  });
+  const grandTotal = rpMinuman + rpCookies;
+  const komisi = hitungKomisi(cupMinuman, aturanData["Minuman"]) + hitungKomisi(pcsCookies, aturanData["Cookies"]);
+  const komisiPlusOps = komisi + currentOperasionalValue;
+  const modal = parseRupiahInput($("editModal"));
+  const qris = parseRupiahInput($("editQris"));
+  const komisiDikurangi = currentAmbilKomisi === "Harian" ? komisi : 0;
+  const setoranCash = grandTotal + modal - qris - currentOperasionalValue - komisiDikurangi;
+
+  $("editJumlahCup").textContent = cupMinuman;
+  $("editJumlahCookies").textContent = pcsCookies;
+  $("editRpMinuman").textContent = formatRupiah(rpMinuman);
+  $("editRpCookies").textContent = formatRupiah(rpCookies);
+  $("editKomisiOps").textContent = formatRupiah(komisiPlusOps);
+  $("editSetoranCash").textContent = formatRupiah(setoranCash);
+  const noteEl = $("editAmbilKomisiNote");
+  if(noteEl){
+    noteEl.textContent = "Ambil Komisi: " + currentAmbilKomisi + (
+      currentAmbilKomisi === "Bulanan"
+        ? " (komisi TIDAK dikurangi dari Setoran Cash, diakumulasi terpisah)"
+        : " (komisi sudah dikurangi dari Setoran Cash)"
+    );
+  }
+
+  return { rpMinuman, rpCookies, grandTotal, komisi, komisiPlusOps, setoranCash, modal, qris, cupMinuman, pcsCookies };
+}
+
+attachRupiahInput($("editModal"));
+attachRupiahInput($("editQris"));
+$("editModal").addEventListener("input", updateEditSummary);
+$("editQris").addEventListener("input", updateEditSummary);
+
+$("backToListBtn").addEventListener("click", () => {
+  showScreen("listScreen");
+  loadSubmissions();
+});
+
+$("saveSubmissionBtn").addEventListener("click", async () => {
   const items = [];
-  document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-    const menu = item.dataset.menu;
-    const qty = cart[menu] || 0;
-    if(qty <= 0) return;
+  document.querySelectorAll("#editItemsCard .edit-item").forEach(row => {
+    const s = parseFloat(row.querySelector(".stockAwal").value) || 0;
+    const t = parseFloat(row.querySelector(".terjual").value) || 0;
     items.push({
-      menu, kategori: item.dataset.kategori, harga: getItemHarga(item), qty,
-      manualDiskon: parseRupiahInput(item.querySelector(".itemDiskon")),
-      tier: item.dataset.tier
+      menu: row.dataset.menu, kategori: row.dataset.kategori,
+      subKategori: row.dataset.sub, satuan: row.dataset.satuan,
+      konversi: parseFloat(row.dataset.konversi) || 1,
+      harga: parseFloat(row.dataset.harga) || 0,
+      stockAwal: s, terjual: t
     });
   });
-  return items;
-}
-// Cermin dari distribusiDiskonProporsional() di server -- dipakai utk
-// live preview di HP, angka final tetap dihitung ulang otoritatif di server.
-function hitungDiskonProporsional(items, diskonTambahan){
-  const subtotal = items.reduce((s, it) => s + it.harga * it.qty, 0);
-  let sumShare = 0;
-  const withShare = items.map(it => {
-    const itemTotal = it.harga * it.qty;
-    const share = subtotal > 0 ? Math.round(diskonTambahan * itemTotal / subtotal) : 0;
-    sumShare += share;
-    return Object.assign({}, it, { _share: share });
-  });
-  const diff = diskonTambahan - sumShare;
-  if(withShare.length) withShare[withShare.length - 1]._share += diff;
-  return withShare.map(it => Object.assign({}, it, { diskonFinal: (it.manualDiskon || 0) + it._share }));
-}
+  const summary = updateEditSummary();
+  const rider = $("editRiderTanggal").textContent.split(" · ")[0];
 
-function updateCartSummary(){
-  const cartItems = collectCartItems();
-  const discountTambahan = parseRupiahInput($("discountInput"));
-  const itemsWithDiskon = hitungDiskonProporsional(cartItems, discountTambahan);
-
-  let subtotal = 0, totalDiskon = 0;
-  const lines = itemsWithDiskon.map(it => {
-    const itemTotal = it.harga * it.qty;
-    subtotal += itemTotal;
-    totalDiskon += it.diskonFinal;
-    const tierLabel = it.tier === "special" ? " (Special)" : "";
-    const diskonNote = it.diskonFinal > 0 ? ` − diskon ${formatRupiah(it.diskonFinal)}` : "";
-    return `<div class="receipt-line"><span>${it.menu}${tierLabel} × ${it.qty}${diskonNote}</span><span class="val">${formatRupiah(Math.max(0, itemTotal - it.diskonFinal))}</span></div>`;
-  });
-  $("cartSummaryLines").innerHTML = lines.join("") || '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item dipilih</p>';
-  const ongkir = parseRupiahInput($("ongkirInput"));
-  const grandTotal = Math.max(0, subtotal - totalDiskon + ongkir);
-  $("cartSubtotal").textContent = formatRupiah(subtotal);
-  if(ongkir > 0){
-    $("cartOngkirLine").style.display = "flex";
-    $("cartOngkir").textContent = "+" + formatRupiah(ongkir);
-  } else {
-    $("cartOngkirLine").style.display = "none";
-  }
-  $("cartGrandTotal").textContent = formatRupiah(grandTotal);
-  const customerName = $("customerInput").value.trim();
-  $("receiptCustomerLine").textContent = "Customer: " + (customerName || "—");
-  const tanggalPilihan = $("tanggalInputOwner").value ? new Date($("tanggalInputOwner").value + "T00:00:00") : new Date();
-  $("receiptTanggalLine").textContent = "Tanggal: " + tanggalPilihan.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
-}
-$("customerInput").addEventListener("input", updateCartSummary);
-attachRupiahInput($("discountInput"));
-$("discountInput").addEventListener("input", updateCartSummary);
-attachRupiahInput($("ongkirInput"));
-$("ongkirInput").addEventListener("input", updateCartSummary);
-// ---------- Status bayar toggle ----------
-function setStatusBayar(status){
-  statusBayar = status;
-  $("btnPaid").classList.toggle("active", status === "Sudah Dibayar");
-  $("btnPaid").classList.toggle("paid", status === "Sudah Dibayar");
-  $("btnUnpaid").classList.toggle("active", status === "Belum Dibayar");
-  $("btnUnpaid").classList.toggle("unpaid", status === "Belum Dibayar");
-  $("btnOrder").classList.toggle("active", status === "PO");
-  $("btnOrder").classList.toggle("order", status === "PO");
-}
-$("btnPaid").addEventListener("click", () => setStatusBayar("Sudah Dibayar"));
-$("btnUnpaid").addEventListener("click", () => setStatusBayar("Belum Dibayar"));
-$("btnOrder").addEventListener("click", () => setStatusBayar("PO"));
-
-// ---------- Submit Penjualan ----------
-function exitEditMode(){
-  editingTransaksiId = null;
-  $("editModeNote").style.display = "none";
-  $("submitPenjualanBtn").textContent = "Catat Transaksi";
-}
-$("cancelEditBtn").addEventListener("click", (e) => {
-  e.preventDefault();
-  exitEditMode();
-  $("customerInput").value = "";
-  $("discountInput").value = "";
-  $("ongkirInput").value = "";
-  $("keteranganInput").value = "";
-  $("tanggalInputOwner").value = localDateStr(new Date());
-  cart = {};
-  document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
-  document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
-    document.querySelectorAll("#menuOwnerListCard .itemDiskon").forEach(el => el.value = "");
-  document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-    item.dataset.tier = "special";
-    item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "special"));
-  });
-  updateCartSummary();
-  $("btnPaid").click();
-});
-// ---------- Invoice / Nota Penjualan (buka dari tap kartu di Inquiry) ----------
-let currentInvoiceId = null;
-async function openInvoice(transaksiId){
-  currentInvoiceId = transaksiId;
-  showScreen("invoiceScreen");
-  $("invoiceStatusMsg").textContent = "Memuat...";
-  $("invoiceStatusMsg").className = "status";
-  try{
-    const detail = await apiPost({ action: "getTransaksiOwnerDetail", transaksiId });
-    const tanggalStr = new Date(detail.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
-    $("invoiceCustomerLine").textContent = "Customer: " + (detail.customer || "—");
-    $("invoiceTanggalLine").textContent = "Tanggal: " + tanggalStr;
-
-    let subtotal = 0;
-    $("invoiceLines").innerHTML = detail.items.map(it => {
-      const lineTotal = it.qty * it.harga;
-      subtotal += lineTotal;
-      return `<div class="receipt-line"><span>${it.menu} × ${it.qty}</span><span class="val">${formatRupiah(lineTotal)}</span></div>`;
-    }).join("");
-    $("invoiceSubtotal").textContent = formatRupiah(subtotal);
-    const grandTotal = Math.max(0, subtotal - (detail.discount || 0) + (detail.ongkir || 0));
-    $("invoiceGrandTotal").textContent = formatRupiah(grandTotal);
-    if(detail.discount > 0){
-      $("invoiceDiscountLine").style.display = "flex";
-      $("invoiceDiscount").textContent = "-" + formatRupiah(detail.discount);
-    } else {
-      $("invoiceDiscountLine").style.display = "none";
-    }
-    if(detail.ongkir > 0){
-      $("invoiceOngkirLine").style.display = "flex";
-      $("invoiceOngkir").textContent = "+" + formatRupiah(detail.ongkir);
-    } else {
-      $("invoiceOngkirLine").style.display = "none";
-    }
-    if(detail.keterangan){
-      $("invoiceKeteranganLine").style.display = "block";
-      $("invoiceKeteranganLine").textContent = `Keterangan: "${detail.keterangan}"`;
-    } else {
-      $("invoiceKeteranganLine").style.display = "none";
-    }
-
-    setInvoiceStatusButtons(detail.statusBayar);
-    $("editInvoiceBtn").style.display = detail.statusBayar === "PO" ? "block" : "none";
-    $("invoiceStatusMsg").textContent = "";
-  }catch(e){
-    $("invoiceStatusMsg").textContent = "Gagal memuat: " + e.message;
-    $("invoiceStatusMsg").className = "status err";
-  }
-}
-function setInvoiceStatusButtons(status){
-  const map = { "Sudah Dibayar": "invBtnPaid", "Belum Dibayar": "invBtnUnpaid", "PO": "invBtnPO" };
-  ["invBtnPaid", "invBtnUnpaid", "invBtnPO"].forEach(id => {
-    $(id).classList.remove("active", "paid", "unpaid", "order");
-  });
-  const activeId = map[status];
-  if(activeId){
-    const cls = status === "Sudah Dibayar" ? "paid" : (status === "Belum Dibayar" ? "unpaid" : "order");
-    $(activeId).classList.add("active", cls);
-  }
-}
-async function changeInvoiceStatus(newStatus){
-  if(!currentInvoiceId) return;
-  $("invoiceStatusMsg").textContent = "Menyimpan...";
-  $("invoiceStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "updateStatusBayar", transaksiId: currentInvoiceId, statusBayar: newStatus });
-    setInvoiceStatusButtons(newStatus);
-    $("editInvoiceBtn").style.display = newStatus === "PO" ? "block" : "none";
-    $("invoiceStatusMsg").textContent = "Status diperbarui ✓";
-    $("invoiceStatusMsg").className = "status ok";
-  }catch(e){
-    $("invoiceStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("invoiceStatusMsg").className = "status err";
-  }
-}
-$("invBtnPaid").addEventListener("click", () => changeInvoiceStatus("Sudah Dibayar"));
-$("invBtnUnpaid").addEventListener("click", () => changeInvoiceStatus("Belum Dibayar"));
-$("invBtnPO").addEventListener("click", () => changeInvoiceStatus("PO"));
-$("editInvoiceBtn").addEventListener("click", () => enterEditMode(currentInvoiceId));
-$("backToInquiryBtn").addEventListener("click", () => {
-  showScreen("belumDibayarScreen");
-  loadBelumDibayar();
-});
-
-async function enterEditMode(transaksiId){
-  $("belumDibayarStatusMsg").textContent = "Memuat data transaksi...";
-  $("belumDibayarStatusMsg").className = "status";
-  try{
-    const detail = await apiPost({ action: "getTransaksiOwnerDetail", transaksiId });
-    editingTransaksiId = transaksiId;
-    $("penjualInput").value = detail.penjual;
-    $("customerInput").value = detail.customer || "";
-    $("tanggalInputOwner").value = detail.tanggal || localDateStr(new Date());
-    $("discountInput").value = ""; // diskon lama sudah tercatat per item di bawah, jangan dobel
-    $("ongkirInput").value = detail.ongkir ? "Rp" + Number(detail.ongkir).toLocaleString("id-ID") : "";
-    $("keteranganInput").value = detail.keterangan || "";
-    cart = {};
-    const hargaByMenu = {}, diskonByMenu = {};
-    detail.items.forEach(it => { cart[it.menu] = it.qty; hargaByMenu[it.menu] = it.harga; diskonByMenu[it.menu] = it.diskon || 0; });
-    document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-      const menu = item.dataset.menu;
-      const qty = cart[menu] || 0;
-      const qtyInput = item.querySelector(".qty");
-      qtyInput.value = qty;
-      const diskonInput = item.querySelector(".itemDiskon");
-      const diskonVal = diskonByMenu[menu] || 0;
-      diskonInput.value = diskonVal ? "Rp" + Number(diskonVal).toLocaleString("id-ID") : "";
-      // Tebak tier dari harga yg tersimpan: kalau cocok Harga Special, pilih Special; selain itu default Outlet
-      const storedHarga = hargaByMenu[menu];
-      const tier = (storedHarga !== undefined && storedHarga === parseFloat(item.dataset.hargaspecial)) ? "special" : "outlet";
-      item.dataset.tier = tier;
-      item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === tier));
-      item.querySelector(".subtotal").textContent = formatRupiah(Math.max(0, qty * getItemHarga(item) - diskonVal));
-    });
-    updateCartSummary();
-    setStatusBayar(detail.statusBayar || "Belum Dibayar");
-    $("editModeNote").style.display = "block";
-    $("submitPenjualanBtn").textContent = "Simpan Revisi";
-    $("belumDibayarStatusMsg").textContent = "";
-    // pindah ke tab Input (grup Penjualan, sub-tab pertama)
-    document.querySelector('.group-btn[data-group="penjualanGroup"]').click();
-  }catch(e){
-    $("belumDibayarStatusMsg").textContent = "Gagal memuat transaksi: " + e.message;
-    $("belumDibayarStatusMsg").className = "status err";
-  }
-}
-
-$("submitPenjualanBtn").addEventListener("click", async () => {
-  const penjual = $("penjualInput").value;
-  const customer = $("customerInput").value.trim();
-  const keterangan = $("keteranganInput").value.trim();
-  if(!penjual){
-    $("penjualanStatusMsg").textContent = "Pilih nama penjual dulu";
-    $("penjualanStatusMsg").className = "status err";
-    return;
-  }
-  const items = collectCartItems();
-  if(!items.length){
-    $("penjualanStatusMsg").textContent = "Pilih minimal 1 menu";
-    $("penjualanStatusMsg").className = "status err";
-    return;
-  }
-  localStorage.setItem("nama_penjual_owner", penjual);
-  const discount = parseRupiahInput($("discountInput"));
-  const ongkir = parseRupiahInput($("ongkirInput"));
-  $("submitPenjualanBtn").disabled = true;
-  $("penjualanStatusMsg").textContent = "Menyimpan...";
-  $("penjualanStatusMsg").className = "status";
-  try{
-    const payload = {
-      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, ongkir, keterangan
-    };
-    let result;
-    if(editingTransaksiId){
-      payload.action = "updateTransaksiOwner";
-      payload.transaksiId = editingTransaksiId;
-      result = await apiPost(payload);
-      $("penjualanStatusMsg").textContent = `Revisi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
-    } else {
-      payload.action = "submitPenjualanOwner";
-      payload.requestId = generateRequestId();
-      result = await apiPost(payload);
-      $("penjualanStatusMsg").textContent = `Transaksi tersimpan ✓ (Total ${formatRupiah(result.grandTotal)})`;
-    }
-    $("penjualanStatusMsg").className = "status ok";
-    if(customer && !$("customerOptions").innerHTML.includes(`value="${customer}"`)){
-      $("customerOptions").innerHTML += `<option value="${customer}">`;
-    }
-    exitEditMode();
-    // reset form utk transaksi berikutnya
-    $("customerInput").value = "";
-    $("discountInput").value = "";
-    $("ongkirInput").value = "";
-    $("keteranganInput").value = "";
-    cart = {};
-    document.querySelectorAll("#menuOwnerListCard .qty").forEach(el => el.value = 0);
-    document.querySelectorAll("#menuOwnerListCard .subtotal").forEach(el => el.textContent = "Rp0");
-    document.querySelectorAll("#menuOwnerListCard .itemDiskon").forEach(el => el.value = "");
-    document.querySelectorAll("#menuOwnerListCard .menu-item").forEach(item => {
-      item.dataset.tier = "special";
-      item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "special"));
-    });
-    updateCartSummary();
-    $("btnPaid").click();
-  }catch(e){
-    $("penjualanStatusMsg").textContent = "GAGAL menyimpan: " + e.message + ". Coba tekan lagi.";
-    $("penjualanStatusMsg").className = "status err";
-  }finally{
-    $("submitPenjualanBtn").disabled = false;
-  }
-});
-
-// ---------- Belum Dibayar ----------
-let allTransaksiCache = [];
-async function loadBelumDibayar(){
-  const container = $("belumDibayarList");
-  container.innerHTML = '<p class="empty-note">Memuat...</p>';
-  try{
-    const data = await apiGet({ action: "listTransaksiOwner" });
-    allTransaksiCache = data.transaksi || [];
-    applyInquiryFilter();
-    $("belumDibayarStatusMsg").textContent = "";
-  }catch(e){
-    container.innerHTML = "";
-    $("belumDibayarStatusMsg").textContent = "Gagal memuat: " + e.message;
-    $("belumDibayarStatusMsg").className = "status err";
-  }
-}
-function applyInquiryFilter(){
-  const filter = $("inquiryFilter").value;
-  const filtered = filter ? allTransaksiCache.filter(t => t.status === filter) : allTransaksiCache;
-  renderBelumDibayar(filtered);
-}
-$("inquiryFilter").addEventListener("change", applyInquiryFilter);
-function renderBelumDibayar(list){
-  const container = $("belumDibayarList");
-  if(!list.length){
-    container.innerHTML = '<p class="empty-note">Tidak ada transaksi untuk filter ini.</p>';
-    return;
-  }
-  const badgeColors = { "PO": "var(--gold)", "Belum Dibayar": "var(--danger)", "Sudah Dibayar": "var(--ok)" };
-  container.innerHTML = list.map(t => {
-    const tanggalStr = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
-    const badgeColor = badgeColors[t.status] || "var(--ink-soft)";
-    const statusLabel = t.status === "Sudah Dibayar" ? "Sudah Lunas" : (t.status === "Belum Dibayar" ? "Belum Lunas" : t.status);
-    return `
-      <div class="bill-item" data-id="${t.idTransaksi}" style="cursor:pointer;">
-        <div class="top">
-          <span class="customer">${t.customer || "(tanpa nama)"}</span>
-          <span class="tanggal">${tanggalStr}</span>
-        </div>
-        <div style="margin:4px 0;">
-          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:${badgeColor}; padding:2px 8px; border-radius:8px;">${statusLabel}</span>
-        </div>
-        ${t.keterangan ? `<div class="meta" style="font-style:italic; margin-bottom:4px;">"${t.keterangan}"</div>` : ''}
-        <div class="bottom">
-          <div>
-            <div class="rp">${formatRupiah(t.total)}</div>
-            <div class="meta">${t.penjual} · ${t.jumlahItem} item${t.discount > 0 ? ` · diskon ${formatRupiah(t.discount)}` : ''}</div>
-          </div>
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            ${t.status === "PO" ? '<button class="icon-btn editPoBtn" style="font-size:11px;">Edit</button>' : ''}
-            ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
-            ${t.status !== "Sudah Dibayar" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
-          </div>
-        </div>
-      </div>`;
-  }).join("");
-  container.querySelectorAll(".bill-item").forEach(row => {
-    row.addEventListener("click", () => openInvoice(row.dataset.id));
-  });
-  container.querySelectorAll(".editPoBtn").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const row = btn.closest(".bill-item");
-      enterEditMode(row.dataset.id);
-    });
-  });
-  container.querySelectorAll(".markDeliveredBtn").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      const row = btn.closest(".bill-item");
-      const id = row.dataset.id;
-      btn.disabled = true;
-      try{
-        await apiPost({ action: "updateStatusBayar", transaksiId: id, statusBayar: "Belum Dibayar" });
-        loadBelumDibayar();
-      }catch(e){
-        btn.disabled = false;
-      }
-    });
-  });
-  container.querySelectorAll(".markPaidBtn").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      const row = btn.closest(".bill-item");
-      const id = row.dataset.id;
-      btn.disabled = true;
-      btn.textContent = "Menyimpan...";
-      try{
-        await apiPost({ action: "updateStatusBayar", transaksiId: id, statusBayar: "Sudah Dibayar" });
-        row.remove();
-        if(!container.querySelector(".bill-item")){
-          container.innerHTML = '<p class="empty-note">Tidak ada transaksi Belum Dibayar / Order 🎉</p>';
-        }
-      }catch(e){
-        btn.disabled = false;
-        btn.textContent = "Gagal, coba lagi";
-      }
-    });
-  });
-}
-
-// ---------- Procurement ----------
-attachRupiahInput($("procTotalHarga"));
-
-function renderProcCart(){
-  const container = $("procCartLines");
-  if(!procCart.length){
-    container.innerHTML = '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item ditambahkan</p>';
-    $("procCartGrandTotal").textContent = "Rp0";
-    return;
-  }
-  let grandTotal = 0;
-  container.innerHTML = procCart.map((it, idx) => {
-    grandTotal += it.totalHarga;
-    const kategoriLabel = it.subKategori ? `${it.kategoriProduct} - ${it.subKategori}` : it.kategoriProduct;
-    return `
-      <div class="receipt-line" data-idx="${idx}">
-        <span>${it.namaProduct} — ${it.quantity} ${it.satuanPurchase} (${kategoriLabel})</span>
-        <span class="val">${formatRupiah(it.totalHarga)} <a href="#" class="removeProcItem" style="color:var(--danger); margin-left:8px;">✕</a></span>
-      </div>`;
-  }).join("");
-  $("procCartGrandTotal").textContent = formatRupiah(grandTotal);
-  container.querySelectorAll(".removeProcItem").forEach(link => {
-    link.addEventListener("click", (e) => {
-      e.preventDefault();
-      const idx = parseInt(e.target.closest("[data-idx]").dataset.idx, 10);
-      procCart.splice(idx, 1);
-      renderProcCart();
-    });
-  });
-}
-
-$("procKategori").addEventListener("change", () => {
-  const isGaji = $("procKategori").value === "Gaji";
-  $("procSubKategoriWrap").style.display = isGaji ? "block" : "none";
-  if(isGaji){
-    $("procSubKategori").innerHTML = '<option value="">— Pilih —</option>' +
-      subKategoriGajiList.map(s => `<option value="${s}">${s}</option>`).join("");
-  } else {
-    $("procSubKategori").value = "";
-  }
-});
-$("addProcItemBtn").addEventListener("click", () => {
-  const namaProduct = $("procNama").value.trim();
-  const jenisProduct = $("procJenis").value;
-  const kategoriProduct = $("procKategori").value;
-  const subKategori = kategoriProduct === "Gaji" ? $("procSubKategori").value : "";
-  const totalHarga = parseRupiahInput($("procTotalHarga"));
-  const quantity = parseFloat($("procQty").value) || 0;
-  const satuanPurchase = $("procSatuanPurchase").value;
-  const konversi = parseFloat($("procKonversi").value) || 1;
-  const satuanStock = $("procSatuanStock").value;
-
-  if(!namaProduct || !jenisProduct || !kategoriProduct){
-    $("procItemStatusMsg").textContent = "Nama Product, Type, dan Category wajib diisi";
-    $("procItemStatusMsg").className = "status err";
-    return;
-  }
-  if(kategoriProduct === "Gaji" && !subKategori){
-    $("procItemStatusMsg").textContent = "Pilih Sub Kategori Gaji dulu (Gaji Dasar/Insentif Harian/Bonus)";
-    $("procItemStatusMsg").className = "status err";
-    return;
-  }
-  procCart.push({ namaProduct, jenisProduct, kategoriProduct, subKategori, totalHarga, quantity, satuanPurchase, konversi, satuanStock });
-  if(!$("namaProductOptions").innerHTML.includes(`value="${namaProduct}"`)){
-    $("namaProductOptions").innerHTML += `<option value="${namaProduct}">`;
-  }
-  renderProcCart();
-  $("procItemStatusMsg").textContent = "Ditambahkan ke daftar ✓";
-  $("procItemStatusMsg").className = "status ok";
-  // reset form item, siap isi item berikutnya (Tanggal tetap sama)
-  $("procNama").value = ""; $("procTotalHarga").value = ""; $("procQty").value = "";
-  $("procSatuanPurchase").value = ""; $("procKonversi").value = "1"; $("procSatuanStock").value = "";
-  $("procJenis").value = ""; $("procKategori").value = "";
-  $("procSubKategoriWrap").style.display = "none"; $("procSubKategori").innerHTML = "";
-  $("procNama").focus();
-});
-
-$("submitProcurementBtn").addEventListener("click", async () => {
-  const tanggalPembelian = $("procTanggal").value;
-  if(!procCart.length){
-    $("procurementStatusMsg").textContent = "Tambahkan minimal 1 item ke daftar dulu";
-    $("procurementStatusMsg").className = "status err";
-    return;
-  }
-  $("submitProcurementBtn").disabled = true;
-  $("procurementStatusMsg").textContent = "Menyimpan " + procCart.length + " item...";
-  $("procurementStatusMsg").className = "status";
-  try{
-    const result = await apiPost({ action: "submitProcurement", tanggalPembelian, items: procCart });
-    $("procurementStatusMsg").textContent = `${result.jumlahItem} item Procurement tersimpan ✓`;
-    $("procurementStatusMsg").className = "status ok";
-    procCart = [];
-    renderProcCart();
-  }catch(e){
-    $("procurementStatusMsg").textContent = "GAGAL menyimpan: " + e.message + ". Daftar item TETAP tersimpan lokal, coba tekan lagi.";
-    $("procurementStatusMsg").className = "status err";
-  }finally{
-    $("submitProcurementBtn").disabled = false;
-  }
-});
-
-// ---------- Jenis Product ----------
-function renderJenisProductList(){
-  const card = $("jenisProductListCard");
-  if(!jenisProductList.length){ card.innerHTML = "<p>Belum ada Jenis Product.</p>"; return; }
-  card.innerHTML = jenisProductList.map(j => `
-    <div class="list-manage-item" data-nama="${j}">
-      <div class="list-manage-info"><div class="list-manage-name">${j}</div></div>
-      <button class="icon-btn del">Hapus</button>
-    </div>`).join("");
-  card.querySelectorAll(".list-manage-item").forEach(row => {
-    row.querySelector(".del").addEventListener("click", async () => {
-      const nama = row.dataset.nama;
-      if(!confirm(`Hapus "${nama}" dari daftar Jenis Product?`)) return;
-      try{
-        await apiPost({ action: "deleteJenisProduct", nama });
-        jenisProductList = jenisProductList.filter(j => j !== nama);
-        $("procJenis").innerHTML = '<option value="">— Pilih —</option>' +
-          jenisProductList.map(j => `<option value="${j}">${j}</option>`).join("");
-        renderJenisProductList();
-      }catch(e){
-        $("jenisProductStatusMsg").textContent = "Gagal menghapus: " + e.message;
-        $("jenisProductStatusMsg").className = "status err";
-      }
-    });
-  });
-}
-$("addJenisProductBtn").addEventListener("click", async () => {
-  const nama = $("newJenisProductInput").value.trim();
-  if(!nama){
-    $("jenisProductStatusMsg").textContent = "Nama Jenis Product wajib diisi";
-    $("jenisProductStatusMsg").className = "status err";
-    return;
-  }
-  $("jenisProductStatusMsg").textContent = "Menyimpan...";
-  $("jenisProductStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "addJenisProduct", nama });
-    jenisProductList.push(nama); jenisProductList.sort((a, b) => a.localeCompare(b, "id"));
-    $("procJenis").innerHTML = '<option value="">— Pilih —</option>' +
-      jenisProductList.map(j => `<option value="${j}">${j}</option>`).join("");
-    $("newJenisProductInput").value = "";
-    $("jenisProductStatusMsg").textContent = "Ditambahkan ✓";
-    $("jenisProductStatusMsg").className = "status ok";
-    renderJenisProductList();
-  }catch(e){
-    $("jenisProductStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("jenisProductStatusMsg").className = "status err";
-  }
-});
-
-// ---------- Kategori Product ----------
-// ---------- Modal & Aset ----------
-async function loadModalAset(){
-  const container = $("modalAsetList");
-  container.innerHTML = '<p class="empty-note">Memuat...</p>';
-  try{
-    const data = await apiGet({ action: "listModalAsetOwner" });
-    renderModalAsetList(data.modalAset || [], data.grandTotal || 0);
-    $("modalAsetStatusMsg").textContent = "";
-  }catch(e){
-    container.innerHTML = "";
-    $("modalAsetStatusMsg").textContent = "Gagal memuat: " + e.message;
-    $("modalAsetStatusMsg").className = "status err";
-  }
-}
-function renderModalAsetList(list, grandTotal){
-  const container = $("modalAsetList");
-  if(!list.length){
-    container.innerHTML = '<p class="empty-note">Belum ada catatan Modal & Aset.</p>';
-  } else {
-    container.innerHTML = list.map(m => {
-      const tanggalStr = new Date(m.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
-      return `
-        <div class="receipt-line" style="display:block; padding:10px 0;">
-          <div style="display:flex; justify-content:space-between;">
-            <span style="font-weight:600;">${m.kategori}</span>
-            <span class="val">${formatRupiah(m.total)}</span>
-          </div>
-          <div class="meta" style="font-size:12px; color:var(--ink-soft);">${tanggalStr}${m.keterangan ? " · " + m.keterangan : ""}</div>
-        </div>`;
-    }).join("");
-  }
-  $("modalAsetGrandTotal").textContent = formatRupiah(grandTotal);
-}
-attachRupiahInput($("modalAsetTotal"));
-if(!$("modalAsetTanggal").value) $("modalAsetTanggal").value = localDateStr(new Date());
-$("submitModalAsetBtn").addEventListener("click", async () => {
-  const tanggal = $("modalAsetTanggal").value || localDateStr(new Date());
-  const kategori = $("modalAsetKategori").value;
-  const keterangan = $("modalAsetKeterangan").value.trim();
-  const total = parseRupiahInput($("modalAsetTotal"));
-  if(!kategori){
-    $("modalAsetStatusMsg").textContent = "Pilih Kategori dulu";
-    $("modalAsetStatusMsg").className = "status err";
-    return;
-  }
-  if(!total){
-    $("modalAsetStatusMsg").textContent = "Isi Total dulu";
-    $("modalAsetStatusMsg").className = "status err";
-    return;
-  }
-  $("submitModalAsetBtn").disabled = true;
-  $("modalAsetStatusMsg").textContent = "Menyimpan...";
-  $("modalAsetStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "submitModalAset", tanggal, kategori, keterangan, total });
-    $("modalAsetStatusMsg").textContent = "Tersimpan ✓";
-    $("modalAsetStatusMsg").className = "status ok";
-    $("modalAsetKategori").value = ""; $("modalAsetKeterangan").value = ""; $("modalAsetTotal").value = "";
-    loadModalAset();
-  }catch(e){
-    $("modalAsetStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("modalAsetStatusMsg").className = "status err";
-  }finally{
-    $("submitModalAsetBtn").disabled = false;
-  }
-});
-
-// ---------- Inquiry Procurement ----------
-let allProcurementCache = [];
-let allGajiCache = [];
-let procurementSummaryCache = {}; // dari server: { "yyyy-MM": { kategori: total } }, dihitung dari SEMUA data
-let inquiryPoolAktif = "procurement"; // "procurement" atau "gaji"
-const KATEGORI_PROCUREMENT_NON_GAJI = ["Bahan Baku", "Packaging", "Aset / Capex", "Operating Expense", "Owner Withdrawal"];
-const SUBKATEGORI_GAJI_FILTER = ["Gaji Dasar", "Insentif Harian", "Bonus"];
-
-async function loadProcurementInquiry(){
-  const container = $("procurementInquiryList");
-  container.innerHTML = '<p class="empty-note">Memuat...</p>';
-  try{
-    const data = await apiGet({ action: "listProcurementOwner" });
-    allProcurementCache = data.procurement || [];
-    allGajiCache = data.gaji || [];
-    procurementSummaryCache = data.summary || {};
-    updateInquiryTruncatedNote(data);
-    populateProcInquiryBulan();
-    populateProcInquiryKategori();
-    applyProcInquiryFilter();
-  }catch(e){
-    container.innerHTML = "";
-    $("procurementInquiryStatusMsg").textContent = "Gagal memuat: " + e.message;
-    $("procurementInquiryStatusMsg").className = "status err";
-  }
-}
-function updateInquiryTruncatedNote(data){
-  const truncated = inquiryPoolAktif === "gaji" ? data.truncatedGaji : data.truncatedProcurement;
-  const totalCount = inquiryPoolAktif === "gaji" ? data.totalCountGaji : data.totalCountProcurement;
-  $("procurementInquiryStatusMsg").textContent = truncated
-    ? `Menampilkan 300 entri terbaru dari total ${totalCount} (grafik Report tetap dihitung dari SEMUA data).`
-    : "";
-  $("procurementInquiryStatusMsg").className = "status";
-}
-function populateProcInquiryKategori(){
-  const select = $("procInquiryFilter");
-  const opsi = inquiryPoolAktif === "gaji" ? SUBKATEGORI_GAJI_FILTER : KATEGORI_PROCUREMENT_NON_GAJI;
-  const label = inquiryPoolAktif === "gaji" ? "Semua Sub Kategori" : "Semua Kategori";
-  select.innerHTML = `<option value="">${label}</option>` + opsi.map(k => `<option value="${k}">${k}</option>`).join("");
-}
-function switchInquiryPool(pool){
-  inquiryPoolAktif = pool;
-  $("inquiryPoolProcurementBtn").classList.toggle("active", pool === "procurement");
-  $("inquiryPoolGajiBtn").classList.toggle("active", pool === "gaji");
-  populateProcInquiryKategori();
-  applyProcInquiryFilter();
-}
-$("inquiryPoolProcurementBtn").addEventListener("click", () => switchInquiryPool("procurement"));
-$("inquiryPoolGajiBtn").addEventListener("click", () => switchInquiryPool("gaji"));
-function bulanKeyOf(tanggalPembelian){ return (tanggalPembelian || "").slice(0, 7); } // "yyyy-MM"
-function bulanLabelOf(key){
-  const [y, m] = key.split("-");
-  return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-}
-function populateProcInquiryBulan(){
-  const select = $("procInquiryBulan");
-  const current = select.value;
-  const bulanSet = Object.keys(procurementSummaryCache)
-    .filter(Boolean)
-    .sort((a, b) => b.localeCompare(a)); // terbaru dulu
-  select.innerHTML = '<option value="">Semua Bulan</option>' +
-    bulanSet.map(k => `<option value="${k}">${bulanLabelOf(k)}</option>`).join("");
-  if(bulanSet.includes(current)) select.value = current;
-}
-function applyProcInquiryFilter(){
-  const kategoriFilter = $("procInquiryFilter").value;
-  const bulanFilter = $("procInquiryBulan").value;
-  const sumberData = inquiryPoolAktif === "gaji" ? allGajiCache : allProcurementCache;
-  const byBulan = bulanFilter ? sumberData.filter(p => bulanKeyOf(p.tanggalPembelian) === bulanFilter) : sumberData;
-  const filtered = kategoriFilter
-    ? byBulan.filter(p => inquiryPoolAktif === "gaji" ? p.subKategori === kategoriFilter : p.kategoriProduct === kategoriFilter)
-    : byBulan;
-  renderProcurementInquiry(filtered);
-}
-$("procInquiryFilter").addEventListener("change", applyProcInquiryFilter);
-$("procInquiryBulan").addEventListener("change", applyProcInquiryFilter);
-
-// ---------- Report Uang Keluar ----------
-async function loadProcurementReport(){
-  const select = $("procReportBulan");
-  const current = select.value;
-  try{
-    if(!Object.keys(procurementSummaryCache).length){
-      const data = await apiGet({ action: "listProcurementOwner" });
-      procurementSummaryCache = data.summary || {};
-    }
-    const bulanSet = Object.keys(procurementSummaryCache).sort((a, b) => b.localeCompare(a));
-    select.innerHTML = '<option value="">Semua Bulan</option>' +
-      bulanSet.map(k => `<option value="${k}">${bulanLabelOf(k)}</option>`).join("");
-    if(bulanSet.includes(current)) select.value = current;
-    renderProcSpendChart(select.value);
-  }catch(e){
-    $("procSpendChart").innerHTML = "";
-    $("procSpendPeriodeNote").textContent = "Gagal memuat: " + e.message;
-  }
-}
-$("procReportBulan").addEventListener("change", () => renderProcSpendChart($("procReportBulan").value));
-
-function renderProcSpendChart(bulanFilter){
-  $("procSpendPeriodeNote").textContent = bulanFilter ? bulanLabelOf(bulanFilter) : "Semua bulan (seluruh data)";
-  // Gabungkan totals dari 1 bulan terpilih, ATAU jumlahkan semua bulan kalau "Semua Bulan"
-  const totals = {};
-  let grandTotal = 0;
-  const bulanKeys = bulanFilter ? [bulanFilter] : Object.keys(procurementSummaryCache);
-  bulanKeys.forEach(bk => {
-    const perKategori = procurementSummaryCache[bk] || {};
-    Object.entries(perKategori).forEach(([kategori, total]) => {
-      totals[kategori] = (totals[kategori] || 0) + total;
-      grandTotal += total;
-    });
-  });
-  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]); // terbesar dulu
-  const maxVal = rows.length ? rows[0][1] : 0;
-  const chart = $("procSpendChart");
-  if(!rows.length){
-    chart.innerHTML = '<p class="empty-note">Belum ada data Procurement di periode ini.</p>';
-  } else {
-    chart.innerHTML = rows.map(([kategori, total]) => {
-      const pct = maxVal > 0 ? Math.round((total / maxVal) * 100) : 0;
-      return `
-        <div class="spend-row">
-          <div class="spend-row-top"><span class="spend-row-name">${kategori}</span><span class="spend-row-amount">${formatRupiah(total)}</span></div>
-          <div class="spend-bar-track"><div class="spend-bar-fill" style="width:${pct}%;"></div></div>
-        </div>`;
-    }).join("");
-  }
-  $("procSpendGrandTotal").textContent = formatRupiah(grandTotal);
-}
-
-// ---------- Report Uang Masuk ----------
-let pemasukanSummaryCache = {};
-async function loadPenjualanReport(){
-  const select = $("pemasukanReportBulan");
-  const current = select.value;
-  try{
-    const data = await apiGet({ action: "getRingkasanUangMasuk" });
-    pemasukanSummaryCache = data.summary || {};
-    const bulanSet = Object.keys(pemasukanSummaryCache).sort((a, b) => b.localeCompare(a));
-    select.innerHTML = '<option value="">Semua Bulan</option>' +
-      bulanSet.map(k => `<option value="${k}">${bulanLabelOf(k)}</option>`).join("");
-    if(bulanSet.includes(current)) select.value = current;
-    renderPemasukanReportChart(select.value);
-  }catch(e){
-    $("pemasukanReportChart").innerHTML = "";
-    $("pemasukanReportPeriodeNote").textContent = "Gagal memuat: " + e.message;
-  }
-}
-$("pemasukanReportBulan").addEventListener("change", () => renderPemasukanReportChart($("pemasukanReportBulan").value));
-
-const PEMASUKAN_KATEGORI_ORDER = ["Jeda Rider", "Jeda Owner", "Investment/Jual Aset"];
-const PEMASUKAN_KATEGORI_COLOR = {
-  "Jeda Rider": "#7A1E2B",           // merah tua (warna utama Jeda Owner)
-  "Jeda Owner": "#B5495A",           // merah medium
-  "Investment/Jual Aset": "#E3A2AC" // merah muda
-};
-function renderPemasukanReportChart(bulanFilter){
-  $("pemasukanReportPeriodeNote").textContent = bulanFilter ? bulanLabelOf(bulanFilter) : "Semua bulan (seluruh data)";
-  const totals = {};
-  let grandTotal = 0;
-  const bulanKeys = bulanFilter ? [bulanFilter] : Object.keys(pemasukanSummaryCache);
-  bulanKeys.forEach(bk => {
-    const perKategori = pemasukanSummaryCache[bk] || {};
-    Object.entries(perKategori).forEach(([kategori, total]) => {
-      totals[kategori] = (totals[kategori] || 0) + total;
-      grandTotal += total;
-    });
-  });
-  const chart = $("pemasukanReportChart");
-  if(grandTotal <= 0){
-    chart.innerHTML = '<p class="empty-note">Belum ada data Uang Masuk di periode ini.</p>';
-    $("pemasukanReportGrandTotal").textContent = formatRupiah(0);
-    return;
-  }
-  // Bangun conic-gradient sesuai urutan tetap (bukan urut besar-kecil), biar warnanya konsisten tiap dilihat
-  let cumulativePct = 0;
-  const gradientStops = [];
-  const legendRows = [];
-  PEMASUKAN_KATEGORI_ORDER.forEach(kategori => {
-    const total = totals[kategori] || 0;
-    const pct = (total / grandTotal) * 100;
-    const color = PEMASUKAN_KATEGORI_COLOR[kategori];
-    if(pct > 0){
-      gradientStops.push(`${color} ${cumulativePct}% ${cumulativePct + pct}%`);
-      cumulativePct += pct;
-    }
-    legendRows.push(`
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-        <span style="width:13px; height:13px; border-radius:4px; background:${color}; flex-shrink:0;"></span>
-        <span style="flex:1; font-size:13.5px; font-weight:600;">${kategori}</span>
-        <span style="font-size:13px; color:var(--ink-soft); font-variant-numeric:tabular-nums;">${Math.round(pct)}%</span>
-      </div>
-      <div style="font-size:12px; color:var(--ink-soft); margin:-6px 0 0 21px;">${formatRupiah(total)}</div>`);
-  });
-  const gradient = gradientStops.length ? `conic-gradient(${gradientStops.join(", ")})` : "var(--paper-2)";
-  chart.innerHTML = `
-    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;">
-      <div style="width:150px; height:150px; border-radius:50%; background:${gradient}; flex-shrink:0;"></div>
-      <div style="flex:1; min-width:180px;">${legendRows.join("")}</div>
-    </div>`;
-  $("pemasukanReportGrandTotal").textContent = formatRupiah(grandTotal);
-}
-
-function renderProcurementInquiry(list){
-  const container = $("procurementInquiryList");
-  if(!list.length){
-    container.innerHTML = '<p class="empty-note">Belum ada Procurement untuk filter ini.</p>';
-    return;
-  }
-  container.innerHTML = list.map(p => {
-    const tanggalStr = new Date(p.tanggalPembelian + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
-    return `
-      <div class="bill-item">
-        <div class="top">
-          <span class="customer">${p.namaProduct}</span>
-          <span class="tanggal">${tanggalStr}</span>
-        </div>
-        <div style="margin:4px 0;">
-          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:var(--maroon); padding:2px 8px; border-radius:8px;">${p.kategoriProduct}${p.subKategori ? " · " + p.subKategori : ""}</span>
-          <span class="meta" style="margin-left:6px;">${p.jenisProduct}</span>
-        </div>
-        <div class="bottom">
-          <div>
-            <div class="rp">${formatRupiah(p.totalHarga)}</div>
-            <div class="meta">${p.quantity} ${p.satuanPurchase} → setara ${p.quantity * p.konversi} ${p.satuanStock}</div>
-          </div>
-        </div>
-      </div>`;
-  }).join("");
-}
-
-function renderKategoriProductList(){
-  const card = $("kategoriProductListCard");
-  if(!kategoriProductList.length){ card.innerHTML = "<p>Belum ada Kategori Product.</p>"; return; }
-  card.innerHTML = kategoriProductList.map(k => `
-    <div class="list-manage-item" data-nama="${k}">
-      <div class="list-manage-info"><div class="list-manage-name">${k}</div></div>
-      <button class="icon-btn del">Hapus</button>
-    </div>`).join("");
-  card.querySelectorAll(".list-manage-item").forEach(row => {
-    row.querySelector(".del").addEventListener("click", async () => {
-      const nama = row.dataset.nama;
-      if(!confirm(`Hapus "${nama}" dari daftar Kategori Product?`)) return;
-      try{
-        await apiPost({ action: "deleteKategoriProduct", nama });
-        kategoriProductList = kategoriProductList.filter(k => k !== nama);
-        $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
-          kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
-        renderKategoriProductList();
-      }catch(e){
-        $("kategoriProductStatusMsg").textContent = "Gagal menghapus: " + e.message;
-        $("kategoriProductStatusMsg").className = "status err";
-      }
-    });
-  });
-}
-$("addKategoriProductBtn").addEventListener("click", async () => {
-  const nama = $("newKategoriProductInput").value.trim();
-  if(!nama){
-    $("kategoriProductStatusMsg").textContent = "Nama Kategori Product wajib diisi";
-    $("kategoriProductStatusMsg").className = "status err";
-    return;
-  }
-  $("kategoriProductStatusMsg").textContent = "Menyimpan...";
-  $("kategoriProductStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "addKategoriProduct", nama });
-    kategoriProductList.push(nama); kategoriProductList.sort((a, b) => a.localeCompare(b, "id"));
-    $("procKategori").innerHTML = '<option value="">— Pilih —</option>' +
-      kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("");
-    $("newKategoriProductInput").value = "";
-    $("kategoriProductStatusMsg").textContent = "Ditambahkan ✓";
-    $("kategoriProductStatusMsg").className = "status ok";
-    renderKategoriProductList();
-  }catch(e){
-    $("kategoriProductStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("kategoriProductStatusMsg").className = "status err";
-  }
-});
-
-// ---------- Satuan / Unit ----------
-function renderSatuanOwnerList(){
-  const card = $("satuanOwnerListCard");
-  if(!satuanList.length){ card.innerHTML = "<p>Belum ada Unit.</p>"; return; }
-  card.innerHTML = satuanList.map(s => `
-    <div class="list-manage-item" data-nama="${s}">
-      <div class="list-manage-info"><div class="list-manage-name">${s}</div></div>
-      <button class="icon-btn del">Hapus</button>
-    </div>`).join("");
-  card.querySelectorAll(".list-manage-item").forEach(row => {
-    row.querySelector(".del").addEventListener("click", async () => {
-      const nama = row.dataset.nama;
-      if(!confirm(`Hapus "${nama}" dari daftar Unit?`)) return;
-      try{
-        await apiPost({ action: "deleteSatuanOwner", nama });
-        satuanList = satuanList.filter(s => s !== nama);
-        $("procSatuanPurchase").innerHTML = '<option value="">— Pilih —</option>' +
-          satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
-        $("procSatuanStock").innerHTML = '<option value="">— Pilih —</option>' +
-          satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
-        renderSatuanOwnerList();
-      }catch(e){
-        $("satuanOwnerStatusMsg").textContent = "Gagal menghapus: " + e.message;
-        $("satuanOwnerStatusMsg").className = "status err";
-      }
-    });
-  });
-}
-$("addSatuanOwnerBtn").addEventListener("click", async () => {
-  const nama = $("newSatuanOwnerInput").value.trim();
-  if(!nama){
-    $("satuanOwnerStatusMsg").textContent = "Nama Unit wajib diisi";
-    $("satuanOwnerStatusMsg").className = "status err";
-    return;
-  }
-  $("satuanOwnerStatusMsg").textContent = "Menyimpan...";
-  $("satuanOwnerStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "addSatuanOwner", nama });
-    satuanList.push(nama);
-    $("procSatuanPurchase").innerHTML = '<option value="">— Pilih —</option>' +
-      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
-    $("procSatuanStock").innerHTML = '<option value="">— Pilih —</option>' +
-      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
-    $("newSatuanOwnerInput").value = "";
-    $("satuanOwnerStatusMsg").textContent = "Ditambahkan ✓";
-    $("satuanOwnerStatusMsg").className = "status ok";
-    renderSatuanOwnerList();
-  }catch(e){
-    $("satuanOwnerStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("satuanOwnerStatusMsg").className = "status err";
-  }
-});
-
-// ---------- Setting Menu (Menu Owner) ----------
-function renderMenuOwnerManage(){
-  const card = $("menuOwnerManageCard");
-  if(!menuOwnerData.length){ card.innerHTML = "<p>Belum ada menu.</p>"; return; }
-  card.innerHTML = menuOwnerData.map(m => {
-    const subLabel = groupLabel(m.kategori, m.subKategori || "");
-    return `
-    <div class="list-manage-item" data-menu="${m.menu}" data-kategori="${m.kategori}"
-         data-sub="${m.subKategori || ''}" data-harga="${m.harga}" data-hargaspecial="${m.hargaSpecial}" data-satuan="${m.satuan}">
-      <div class="list-manage-info">
-        <div class="list-manage-name">${m.menu}</div>
-        <div class="list-manage-sub">${subLabel} · Outlet ${formatRupiah(m.harga)} · Special ${formatRupiah(m.hargaSpecial)}</div>
-      </div>
-      <button class="icon-btn edit">Edit</button>
-      <button class="icon-btn del">Hapus</button>
-    </div>`;
-  }).join("");
-  card.querySelectorAll(".list-manage-item").forEach(row => {
-    row.querySelector(".edit").addEventListener("click", () => editMenuOwner(row.dataset));
-    row.querySelector(".del").addEventListener("click", () => deleteMenuOwner(row.dataset.menu));
-  });
-}
-async function editMenuOwner(current){
-  const namaBaru = prompt("Nama menu:", current.menu);
-  if(namaBaru === null) return;
-  const kategoriBaru = prompt("Kategori (ketik persis): " + Object.keys(kategoriSubkategoriMap).join(" / "), current.kategori);
-  if(kategoriBaru === null) return;
-  const subsForKat = kategoriSubkategoriMap[kategoriBaru.trim()] || [];
-  const subBaru = prompt("Sub kategori (ketik persis): " + subsForKat.join(" / "), current.sub || subsForKat[0]);
-  if(subBaru === null) return;
-  const hargaBaru = prompt("Harga Outlet (Rp):", current.harga);
-  if(hargaBaru === null) return;
-  const hargaSpecialBaru = prompt("Harga Special (Rp):", current.hargaspecial || current.harga);
-  if(hargaSpecialBaru === null) return;
-  $("settingMenuStatusMsg").textContent = "Menyimpan...";
-  $("settingMenuStatusMsg").className = "status";
+  $("saveSubmissionBtn").disabled = true;
+  $("editStatusMsg").textContent = "Menyimpan...";
+  $("editStatusMsg").className = "status";
   try{
     await apiPost({
-      action: "updateMenuOwner", oldMenu: current.menu,
-      menu: namaBaru.trim(), kategori: kategoriBaru.trim(), subKategori: subBaru.trim(),
-      harga: parseFloat(hargaBaru) || 0, hargaSpecial: parseFloat(hargaSpecialBaru) || 0
+      action: "updateSubmission", pin: getPin(), submissionId: currentSubmissionId,
+      rider, tanggal: currentTanggalValue(), items,
+      totalPenjualan: summary.grandTotal, totalKomisi: summary.komisi,
+      modal: summary.modal, qris: summary.qris,
+      operasional: currentOperasionalValue, setoranCash: summary.setoranCash
     });
-    $("settingMenuStatusMsg").textContent = "Menu diperbarui ✓";
-    $("settingMenuStatusMsg").className = "status ok";
-    await loadOwnerInit();
-    renderMenuOwnerManage();
+    $("editStatusMsg").textContent = "Perubahan tersimpan ✓";
+    $("editStatusMsg").className = "status ok";
   }catch(e){
-    $("settingMenuStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("settingMenuStatusMsg").className = "status err";
-  }
-}
-async function deleteMenuOwner(nama){
-  if(!confirm(`Hapus menu "${nama}"?`)) return;
-  $("settingMenuStatusMsg").textContent = "Menghapus...";
-  $("settingMenuStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "deleteMenuOwner", menu: nama });
-    $("settingMenuStatusMsg").textContent = "Menu dihapus ✓";
-    $("settingMenuStatusMsg").className = "status ok";
-    await loadOwnerInit();
-    renderMenuOwnerManage();
-  }catch(e){
-    $("settingMenuStatusMsg").textContent = "Gagal menghapus: " + e.message;
-    $("settingMenuStatusMsg").className = "status err";
-  }
-}
-attachRupiahInput($("newMenuOwnerHarga"));
-attachRupiahInput($("newMenuOwnerHargaSpecial"));
-$("addMenuOwnerBtn").addEventListener("click", async () => {
-  const menu = $("newMenuOwnerName").value.trim();
-  const kategori = $("newMenuOwnerKategori").value;
-  const subKategori = $("newMenuOwnerSub").value;
-  const harga = parseRupiahInput($("newMenuOwnerHarga"));
-  const hargaSpecial = parseRupiahInput($("newMenuOwnerHargaSpecial")) || harga;
-  if(!menu){
-    $("settingMenuStatusMsg").textContent = "Nama menu wajib diisi";
-    $("settingMenuStatusMsg").className = "status err";
-    return;
-  }
-  $("settingMenuStatusMsg").textContent = "Menyimpan...";
-  $("settingMenuStatusMsg").className = "status";
-  try{
-    await apiPost({ action: "addMenuOwner", menu, kategori, subKategori, harga, hargaSpecial });
-    $("newMenuOwnerName").value = ""; $("newMenuOwnerHarga").value = ""; $("newMenuOwnerHargaSpecial").value = "";
-    $("settingMenuStatusMsg").textContent = "Menu ditambahkan ✓";
-    $("settingMenuStatusMsg").className = "status ok";
-    await loadOwnerInit();
-    renderMenuOwnerManage();
-  }catch(e){
-    $("settingMenuStatusMsg").textContent = "Gagal menyimpan: " + e.message;
-    $("settingMenuStatusMsg").className = "status err";
+    $("editStatusMsg").textContent = "Gagal menyimpan: " + e.message;
+    $("editStatusMsg").className = "status err";
+  }finally{
+    $("saveSubmissionBtn").disabled = false;
   }
 });
 
+$("deleteSubmissionBtn").addEventListener("click", async () => {
+  if(!confirm("Yakin hapus seluruh data submission ini? Tindakan ini tidak bisa dibatalkan.")) return;
+  $("deleteSubmissionBtn").disabled = true;
+  $("editStatusMsg").textContent = "Menghapus...";
+  $("editStatusMsg").className = "status";
+  try{
+    await apiPost({ action: "deleteSubmission", pin: getPin(), submissionId: currentSubmissionId });
+    $("editStatusMsg").textContent = "Submission dihapus ✓";
+    $("editStatusMsg").className = "status ok";
+    setTimeout(() => { showScreen("listScreen"); loadSubmissions(); }, 800);
+  }catch(e){
+    $("editStatusMsg").textContent = "Gagal menghapus: " + e.message;
+    $("editStatusMsg").className = "status err";
+  }finally{
+    $("deleteSubmissionBtn").disabled = false;
+  }
+});
+
+// tanggal ISO (yyyy-mm-dd) submission yang sedang diedit
+function currentTanggalValue(){ return _currentTanggalISO; }
+
 // ---------- Start ----------
-loadOwnerInit();
+// (Sengaja TIDAK ada auto-login -- PIN gate selalu tampil dulu tiap app dibuka)
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(()=>{});
