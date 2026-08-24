@@ -659,7 +659,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-dibayarbulanan-v12";
+const APP_VERSION = "2026-08-24-ingatskema-v13";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1534,14 +1534,19 @@ $("hrGajiRider").addEventListener("change", () => {
 $("hrGajiBulan").addEventListener("change", () => {
   if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
 });
-let hrGajiSkema = "1";
+let hrGajiSkema = localStorage.getItem("hr_gaji_skema") || "1"; // ingat pilihan terakhir, biar tidak balik ke default diam-diam
 $("hrSkema1Btn").addEventListener("click", () => setHrGajiSkema("1"));
 $("hrSkema2Btn").addEventListener("click", () => setHrGajiSkema("2"));
-function setHrGajiSkema(skema){
-  hrGajiSkema = skema;
+function terapkanTampilanSkema(skema){
   $("hrSkema1Btn").classList.toggle("active", skema === "1");
   $("hrSkema2Btn").classList.toggle("active", skema === "2");
   $("hrGajiBulanLabel").textContent = skema === "2" ? "Bulan Gajian (tanggal 25)" : "Bulan";
+}
+terapkanTampilanSkema(hrGajiSkema); // langsung terapkan begitu halaman dimuat, sebelum user klik apa pun
+function setHrGajiSkema(skema){
+  hrGajiSkema = skema;
+  localStorage.setItem("hr_gaji_skema", skema);
+  terapkanTampilanSkema(skema);
   if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
 }
 
