@@ -185,6 +185,7 @@
   .hr-badge-absen{ background:var(--danger); }
   .hr-badge-libur{ background:#6B7280; }
   .hr-badge-sakit{ background:#B5495A; }
+  .hr-badge-dayoff{ background:var(--gold); }
   .hr-outstanding-btns{ display:flex; gap:6px; }
   .hr-outstanding-btns button{
     padding:6px 10px; border-radius:8px; border:1.5px solid var(--line);
@@ -565,16 +566,23 @@
     <div class="card">
       <label for="hrGajiRider">Pilih Rider</label>
       <select id="hrGajiRider"><option value="">— Pilih Rider —</option></select>
-      <label for="hrGajiBulan">Bulan</label>
+      <label>Skema Periode</label>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <button type="button" class="pool-toggle-btn active" id="hrSkema1Btn">Tgl 1 – akhir bulan</button>
+        <button type="button" class="pool-toggle-btn" id="hrSkema2Btn">Tgl 25 – 24 (gajian tgl 25)</button>
+      </div>
+      <label for="hrGajiBulan" id="hrGajiBulanLabel">Bulan</label>
       <select id="hrGajiBulan"></select>
     </div>
     <div class="receipt" id="hrGajiCard"></div>
     <p class="status" id="hrGajiStatusMsg"></p>
     <p style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:16px;">
       Perhitungan Gaji ini murni INSIGHT/dasar slip gaji manual — TIDAK
-      otomatis masuk ke Uang Keluar. Bonus Bulanan: total Cup+Cookies ≥
-      1.000 → Rp300.000, ≥ 2.000 → Rp500.000 (bukan tambahan, langsung
-      Rp500.000 total).
+      otomatis masuk ke Uang Keluar. Libur+Sakit (gabungan) dibayar
+      maksimal 4 hari/periode, lebihnya tidak dibayar. Day Off selalu
+      dibayar penuh, tidak masuk kuota 4 hari itu. Bonus Bulanan: total
+      Cup+Cookies ≥ 1.000 → Rp300.000, ≥ 2.000 → Rp500.000 (bukan
+      tambahan, langsung Rp500.000 total).
     </p>
   </section>
 
@@ -631,7 +639,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-hr-v6";
+const APP_VERSION = "2026-08-24-hrgaji-v7";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1506,6 +1514,16 @@ $("hrGajiRider").addEventListener("change", () => {
 $("hrGajiBulan").addEventListener("change", () => {
   if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
 });
+let hrGajiSkema = "1";
+$("hrSkema1Btn").addEventListener("click", () => setHrGajiSkema("1"));
+$("hrSkema2Btn").addEventListener("click", () => setHrGajiSkema("2"));
+function setHrGajiSkema(skema){
+  hrGajiSkema = skema;
+  $("hrSkema1Btn").classList.toggle("active", skema === "1");
+  $("hrSkema2Btn").classList.toggle("active", skema === "2");
+  $("hrGajiBulanLabel").textContent = skema === "2" ? "Bulan Gajian (tanggal 25)" : "Bulan";
+  if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
+}
 
 // ---- Kehadiran ----
 async function loadKehadiran(rider, bulan){
@@ -1534,7 +1552,7 @@ function renderKehadiran(days, rider){
     card.innerHTML = '<p class="empty-note">Belum ada hari yang berlaku di bulan ini.</p>';
     return;
   }
-  const badgeClass = { "Hadir": "hr-badge-hadir", "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit" };
+  const badgeClass = { "Hadir": "hr-badge-hadir", "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit", "Day Off": "hr-badge-dayoff" };
   card.innerHTML = days.map(d => {
     const tanggalLabel = new Date(d.tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"short", day:"numeric", month:"short" });
     if(d.status === "Outstanding"){
@@ -1545,6 +1563,7 @@ function renderKehadiran(days, rider){
             <button type="button" data-status="Absen">Absen</button>
             <button type="button" data-status="Libur">Libur</button>
             <button type="button" data-status="Sakit">Sakit</button>
+            <button type="button" data-status="Day Off">Day Off</button>
           </div>
         </div>`;
     }
@@ -1564,7 +1583,7 @@ function renderKehadiran(days, rider){
       try{
         await apiPost({ action: "setAbsensi", rider, tanggal, status });
         const tanggalLabel = new Date(tanggal + "T00:00:00").toLocaleDateString("id-ID", { weekday:"short", day:"numeric", month:"short" });
-        const bClass = { "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit" };
+        const bClass = { "Absen": "hr-badge-absen", "Libur": "hr-badge-libur", "Sakit": "hr-badge-sakit", "Day Off": "hr-badge-dayoff" };
         row.innerHTML = `<span class="hr-day-date">${tanggalLabel}</span><span class="hr-day-badge ${bClass[status]}">${status}</span>`;
       }catch(e){
         $("hrKehadiranStatusMsg").textContent = "Gagal simpan: " + e.message;
@@ -1581,18 +1600,26 @@ async function loadGaji(rider, bulan){
   card.innerHTML = '<p class="empty-note">Memuat...</p>';
   $("hrGajiStatusMsg").textContent = "";
   try{
-    const g = await apiGet({ action: "getGajiRider", rider, bulan });
-    const bulanLabel = new Date(bulan + "-01T00:00:00").toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    const g = await apiGet({ action: "getGajiRider", rider, bulan, skema: hrGajiSkema });
+    const periodeLabel = new Date(g.periodeMulai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short" }) +
+      " – " + new Date(g.periodeSelesai + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    const liburSakitNote = g.jumlahLiburSakitTidakDibayar > 0
+      ? `${g.jumlahLiburSakitDibayar} dibayar, ${g.jumlahLiburSakitTidakDibayar} lewat kuota (tidak dibayar)`
+      : `${g.jumlahLiburSakitDibayar} dibayar (dari kuota 4)`;
     card.innerHTML = `
       <h2>Slip Gaji — ${rider}</h2>
-      <p class="meta" style="text-align:center; margin-top:-8px;">${bulanLabel}</p>
+      <p class="meta" style="text-align:center; margin-top:-8px;">Periode ${periodeLabel}</p>
       <div class="receipt-line"><span>Jumlah Hari Hadir</span><span class="val">${g.jumlahHariHadir} hari</span></div>
+      <div class="receipt-line"><span>Libur + Sakit (${g.jumlahLiburSakit} total)</span><span class="val">${liburSakitNote}</span></div>
+      <div class="receipt-line"><span>Day Off (selalu dibayar)</span><span class="val">${g.jumlahDayOff} hari</span></div>
+      <div class="receipt-line"><span>Absen (tidak dibayar)</span><span class="val">${g.jumlahAbsen} hari</span></div>
+      <div class="receipt-line"><span>Total Hari Dibayar</span><span class="val">${g.jumlahHariDibayar} hari</span></div>
       <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
       <div class="receipt-line"><span>Total Insentif Harian</span><span class="val">${formatRupiah(g.totalOperasional)}</span></div>
       <div class="receipt-line"><span>Total Bonus Harian (Komisi)</span><span class="val">${formatRupiah(g.totalKomisi)}</span></div>
       <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
       <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
-      <div class="receipt-line total"><span>Total Gaji Bulan Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
+      <div class="receipt-line total"><span>Total Gaji Periode Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
     `;
   }catch(e){
     card.innerHTML = "";
