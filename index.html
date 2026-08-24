@@ -560,7 +560,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-splitgaji-v4";
+const APP_VERSION = "2026-08-24-splitgaji-v5";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1435,7 +1435,7 @@ let allGajiCache = [];
 let procurementSummaryCache = {}; // dari server: { "yyyy-MM": { kategori: total } }, dihitung dari SEMUA data
 let inquiryPoolAktif = "procurement"; // "procurement" atau "gaji"
 const KATEGORI_PROCUREMENT_NON_GAJI = ["Bahan Baku", "Packaging", "Aset / Capex", "Operating Expense", "Owner Withdrawal"];
-const SUBKATEGORI_GAJI_FILTER = ["Insentif Harian", "Bonus"];
+const SUBKATEGORI_GAJI_FILTER = ["Gaji Dasar", "Insentif Harian", "Bonus"];
 
 async function loadProcurementInquiry(){
   const container = $("procurementInquiryList");
