@@ -549,7 +549,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-23-report-v2";
+const APP_VERSION = "2026-08-24-piechart-v3";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1537,6 +1537,12 @@ async function loadPenjualanReport(){
 }
 $("pemasukanReportBulan").addEventListener("change", () => renderPemasukanReportChart($("pemasukanReportBulan").value));
 
+const PEMASUKAN_KATEGORI_ORDER = ["Jeda Rider", "Jeda Owner", "Investment/Jual Aset"];
+const PEMASUKAN_KATEGORI_COLOR = {
+  "Jeda Rider": "#7A1E2B",           // merah tua (warna utama Jeda Owner)
+  "Jeda Owner": "#B5495A",           // merah medium
+  "Investment/Jual Aset": "#E3A2AC" // merah muda
+};
 function renderPemasukanReportChart(bulanFilter){
   $("pemasukanReportPeriodeNote").textContent = bulanFilter ? bulanLabelOf(bulanFilter) : "Semua bulan (seluruh data)";
   const totals = {};
@@ -1549,21 +1555,38 @@ function renderPemasukanReportChart(bulanFilter){
       grandTotal += total;
     });
   });
-  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  const maxVal = rows.length ? rows[0][1] : 0;
   const chart = $("pemasukanReportChart");
-  if(!rows.length){
+  if(grandTotal <= 0){
     chart.innerHTML = '<p class="empty-note">Belum ada data Uang Masuk di periode ini.</p>';
-  } else {
-    chart.innerHTML = rows.map(([kategori, total]) => {
-      const pct = maxVal > 0 ? Math.round((total / maxVal) * 100) : 0;
-      return `
-        <div class="spend-row">
-          <div class="spend-row-top"><span class="spend-row-name">${kategori}</span><span class="spend-row-amount">${formatRupiah(total)}</span></div>
-          <div class="spend-bar-track"><div class="spend-bar-fill" style="width:${pct}%;"></div></div>
-        </div>`;
-    }).join("");
+    $("pemasukanReportGrandTotal").textContent = formatRupiah(0);
+    return;
   }
+  // Bangun conic-gradient sesuai urutan tetap (bukan urut besar-kecil), biar warnanya konsisten tiap dilihat
+  let cumulativePct = 0;
+  const gradientStops = [];
+  const legendRows = [];
+  PEMASUKAN_KATEGORI_ORDER.forEach(kategori => {
+    const total = totals[kategori] || 0;
+    const pct = (total / grandTotal) * 100;
+    const color = PEMASUKAN_KATEGORI_COLOR[kategori];
+    if(pct > 0){
+      gradientStops.push(`${color} ${cumulativePct}% ${cumulativePct + pct}%`);
+      cumulativePct += pct;
+    }
+    legendRows.push(`
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+        <span style="width:13px; height:13px; border-radius:4px; background:${color}; flex-shrink:0;"></span>
+        <span style="flex:1; font-size:13.5px; font-weight:600;">${kategori}</span>
+        <span style="font-size:13px; color:var(--ink-soft); font-variant-numeric:tabular-nums;">${Math.round(pct)}%</span>
+      </div>
+      <div style="font-size:12px; color:var(--ink-soft); margin:-6px 0 0 21px;">${formatRupiah(total)}</div>`);
+  });
+  const gradient = gradientStops.length ? `conic-gradient(${gradientStops.join(", ")})` : "var(--paper-2)";
+  chart.innerHTML = `
+    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;">
+      <div style="width:150px; height:150px; border-radius:50%; background:${gradient}; flex-shrink:0;"></div>
+      <div style="flex:1; min-width:180px;">${legendRows.join("")}</div>
+    </div>`;
   $("pemasukanReportGrandTotal").textContent = formatRupiah(grandTotal);
 }
 
