@@ -592,7 +592,6 @@
       </div>
       <input type="text" id="hrPenyesuaianKeterangan" placeholder="Keterangan (mis. Honor angkut barang)" style="margin-top:8px;">
       <button class="primary" id="hrPenyesuaianTambahBtn" style="margin-top:10px;">+ Tambah Penyesuaian</button>
-      <div class="receipt-line total" style="margin-top:14px;"><span>Total Dibayar Besok<br><span style="font-size:11px; font-weight:400;">(Gaji Dasar + Bonus Bulanan + Penyesuaian)</span></span><span class="val" id="hrTotalSetelahPenyesuaian">Rp0</span></div>
     </div>
 
     <div class="receipt" id="hrGajiCard"></div>
@@ -660,7 +659,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-grouping-v11";
+const APP_VERSION = "2026-08-24-dibayarbulanan-v12";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1642,8 +1641,14 @@ function renderSlipGaji(g){
   const liburSakitNote = g.jumlahLiburSakitTidakDibayar > 0
     ? `${g.jumlahLiburSakitDibayar} dibayar, ${g.jumlahLiburSakitTidakDibayar} lewat kuota (tidak dibayar)`
     : `${g.jumlahLiburSakitDibayar} dibayar (dari kuota 4)`;
-  const gajiDasarPlusBonus = g.gajiDasar + g.bonusBulanan;
   const insentifPlusBonusHarian = g.totalOperasional + g.totalKomisi;
+  const totalPenyesuaian = hrPenyesuaianList.reduce((sum, p) => sum + (p.tipe === "Tambahan" ? p.jumlah : -p.jumlah), 0);
+  const dibayarBulanan = g.gajiDasar + g.bonusBulanan + totalPenyesuaian;
+  const penyesuaianLinesHtml = hrPenyesuaianList.map(p => {
+    const tanda = p.tipe === "Tambahan" ? "+" : "-";
+    const warna = p.tipe === "Tambahan" ? "var(--ok)" : "var(--danger)";
+    return `<div class="receipt-line"><span>${p.keterangan || p.tipe} <span style="font-size:11px; color:${warna};">(${p.tipe})</span></span><span class="val">${tanda}${formatRupiah(p.jumlah)}</span></div>`;
+  }).join("");
   card.innerHTML = `
     <h2>Slip Gaji — ${g.rider}</h2>
     <p class="meta" style="text-align:center; margin-top:12px; font-weight:700;">Periode ${periodeLabel}</p>
@@ -1653,18 +1658,19 @@ function renderSlipGaji(g){
     <div class="receipt-line"><span>Absen (tidak dibayar)</span><span class="val">${g.jumlahAbsen} hari</span></div>
     <div class="receipt-line subtotal"><span>Total Hari Dibayar</span><span class="val">${g.jumlahHariDibayar} hari</span></div>
 
-    <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--maroon-dark); margin:14px 0 4px;">Dibayar Besok</p>
+    <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--maroon-dark); margin:14px 0 4px;">Dibayar Bulanan</p>
     <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
     <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
     <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
-    <div class="receipt-line subtotal"><span>Gaji Dasar + Bonus Bulanan</span><span class="val">${formatRupiah(gajiDasarPlusBonus)}</span></div>
+    ${penyesuaianLinesHtml}
+    <div class="receipt-line subtotal"><span>Dibayar Bulanan</span><span class="val">${formatRupiah(dibayarBulanan)}</span></div>
 
     <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); margin:14px 0 4px;">Sudah Diterima Harian (info saja)</p>
     <div class="receipt-line"><span>Total Insentif Harian</span><span class="val">${formatRupiah(g.totalOperasional)}</span></div>
     <div class="receipt-line"><span>Total Bonus Harian (Komisi)</span><span class="val">${formatRupiah(g.totalKomisi)}</span></div>
     <div class="receipt-line subtotal"><span>Insentif Harian + Bonus Harian</span><span class="val">${formatRupiah(insentifPlusBonusHarian)}</span></div>
 
-    <div class="receipt-line total"><span>Total Gaji Periode Ini</span><span class="val">${formatRupiah(g.totalGaji)}</span></div>
+    <div class="receipt-line total"><span>Total Gaji Periode Ini</span><span class="val">${formatRupiah(g.totalGaji + totalPenyesuaian)}</span></div>
   `;
   renderPenyesuaian();
 }
@@ -1696,7 +1702,7 @@ function renderPenyesuaian(){
         try{
           await apiPost({ action: "hapusPenyesuaianGaji", id: item.id });
           hrPenyesuaianList.splice(idx, 1);
-          renderPenyesuaian();
+          renderSlipGaji(hrGajiDataCache); // slip ikut update (baris Penyesuaian & Dibayar Bulanan ada di situ)
         }catch(err){
           $("hrGajiStatusMsg").textContent = "Gagal hapus: " + err.message;
           $("hrGajiStatusMsg").className = "status err";
@@ -1704,10 +1710,6 @@ function renderPenyesuaian(){
       });
     });
   }
-  const totalPenyesuaian = hrPenyesuaianList.reduce((sum, p) => sum + (p.tipe === "Tambahan" ? p.jumlah : -p.jumlah), 0);
-  const gajiDasarPlusBonus = hrGajiDataCache.gajiDasar + hrGajiDataCache.bonusBulanan;
-  const totalAkhir = gajiDasarPlusBonus + totalPenyesuaian;
-  $("hrTotalSetelahPenyesuaian").textContent = formatRupiah(totalAkhir);
 }
 attachRupiahInput($("hrPenyesuaianJumlah"));
 $("hrPenyesuaianTambahBtn").addEventListener("click", async () => {
@@ -1724,7 +1726,7 @@ $("hrPenyesuaianTambahBtn").addEventListener("click", async () => {
     hrPenyesuaianList.push({ id: res.id, tipe, jumlah, keterangan });
     $("hrPenyesuaianJumlah").value = "";
     $("hrPenyesuaianKeterangan").value = "";
-    renderPenyesuaian();
+    renderSlipGaji(hrGajiDataCache); // slip ikut update (baris Penyesuaian & Dibayar Bulanan ada di situ)
   }catch(err){
     $("hrGajiStatusMsg").textContent = "Gagal simpan: " + err.message;
     $("hrGajiStatusMsg").className = "status err";
