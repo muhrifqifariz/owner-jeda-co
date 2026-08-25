@@ -581,8 +581,13 @@
 
     <div class="card" id="hrPenyesuaianCard" style="display:none;">
       <p class="form-section-title" style="margin-top:0">Penyesuaian Tambahan</p>
-      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 10px;">Contoh: honor kerjaan tambahan (Tambahan), atau hutang/cost di luar gaji (Potongan).</p>
+      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 10px;">Uang: honor tambahan/potongan hutang. Cup+Cookies: koreksi jumlah terjual, otomatis mempengaruhi tier Bonus Bulanan.</p>
       <div id="hrPenyesuaianList"></div>
+      <label style="margin-top:8px;">Jenis Penyesuaian</label>
+      <div class="row2">
+        <button type="button" class="pool-toggle-btn active" id="hrPenyesuaianJenisUangBtn">Uang</button>
+        <button type="button" class="pool-toggle-btn" id="hrPenyesuaianJenisCupBtn">Cup + Cookies</button>
+      </div>
       <div class="row2" style="margin-top:8px;">
         <select id="hrPenyesuaianTipe">
           <option value="Tambahan">Tambahan</option>
@@ -659,7 +664,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-24-ingatskema-v13";
+const APP_VERSION = "2026-08-25-cupcookiespenyesuaian-v14";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1621,7 +1626,7 @@ function renderKehadiran(days, rider){
 
 // ---- Gaji ----
 let hrGajiDataCache = null;
-let hrPenyesuaianList = []; // [{tipe: "Tambahan"/"Potongan", jumlah, keterangan}]
+let hrPenyesuaianList = []; // [{jenis: "Uang"/"CupCookies", tipe: "Tambahan"/"Potongan", jumlah, keterangan}]
 
 async function loadGaji(rider, bulan){
   const card = $("hrGajiCard");
@@ -1630,7 +1635,7 @@ async function loadGaji(rider, bulan){
   try{
     const g = await apiGet({ action: "getGajiRider", rider, bulan, skema: hrGajiSkema });
     hrGajiDataCache = g;
-    hrPenyesuaianList = g.penyesuaian || []; // ambil yg sudah tersimpan utk rider+skema+bulan ini
+    hrPenyesuaianList = [...(g.penyesuaian || []), ...(g.penyesuaianCupCookies || [])]; // gabung, sudah tersimpan
     renderSlipGaji(g);
   }catch(e){
     card.innerHTML = "";
@@ -1647,13 +1652,23 @@ function renderSlipGaji(g){
     ? `${g.jumlahLiburSakitDibayar} dibayar, ${g.jumlahLiburSakitTidakDibayar} lewat kuota (tidak dibayar)`
     : `${g.jumlahLiburSakitDibayar} dibayar (dari kuota 4)`;
   const insentifPlusBonusHarian = g.totalOperasional + g.totalKomisi;
-  const totalPenyesuaian = hrPenyesuaianList.reduce((sum, p) => sum + (p.tipe === "Tambahan" ? p.jumlah : -p.jumlah), 0);
+  const penyesuaianUang = hrPenyesuaianList.filter(p => p.jenis !== "CupCookies");
+  const penyesuaianCupCookies = hrPenyesuaianList.filter(p => p.jenis === "CupCookies");
+  const totalPenyesuaian = penyesuaianUang.reduce((sum, p) => sum + (p.tipe === "Tambahan" ? p.jumlah : -p.jumlah), 0);
   const dibayarBulanan = g.gajiDasar + g.bonusBulanan + totalPenyesuaian;
-  const penyesuaianLinesHtml = hrPenyesuaianList.map(p => {
+  const penyesuaianLinesHtml = penyesuaianUang.map(p => {
     const tanda = p.tipe === "Tambahan" ? "+" : "-";
     const warna = p.tipe === "Tambahan" ? "var(--ok)" : "var(--danger)";
     return `<div class="receipt-line"><span>${p.keterangan || p.tipe} <span style="font-size:11px; color:${warna};">(${p.tipe})</span></span><span class="val">${tanda}${formatRupiah(p.jumlah)}</span></div>`;
   }).join("");
+  const cupCookiesLinesHtml = penyesuaianCupCookies.map(p => {
+    const tanda = p.tipe === "Tambahan" ? "+" : "-";
+    const warna = p.tipe === "Tambahan" ? "var(--ok)" : "var(--danger)";
+    return `<div class="receipt-line"><span>${p.keterangan || p.tipe} <span style="font-size:11px; color:${warna};">(${p.tipe})</span></span><span class="val">${tanda}${p.jumlah} pcs</span></div>`;
+  }).join("");
+  const cupCookiesAsliNote = g.totalCupCookiesAsli !== g.totalCupCookies
+    ? `<div class="receipt-line"><span style="font-size:12px; color:var(--ink-soft);">Sebelum penyesuaian</span><span class="val" style="font-size:12px; color:var(--ink-soft);">${g.totalCupCookiesAsli}</span></div>`
+    : "";
   card.innerHTML = `
     <h2>Slip Gaji — ${g.rider}</h2>
     <p class="meta" style="text-align:center; margin-top:12px; font-weight:700;">Periode ${periodeLabel}</p>
@@ -1665,6 +1680,8 @@ function renderSlipGaji(g){
 
     <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--maroon-dark); margin:14px 0 4px;">Dibayar Bulanan</p>
     <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
+    ${cupCookiesAsliNote}
+    ${cupCookiesLinesHtml}
     <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
     <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
     ${penyesuaianLinesHtml}
@@ -1692,10 +1709,13 @@ function renderPenyesuaian(){
     listEl.innerHTML = hrPenyesuaianList.map((p, idx) => {
       const warna = p.tipe === "Tambahan" ? "var(--ok)" : "var(--danger)";
       const tanda = p.tipe === "Tambahan" ? "+" : "-";
+      const isUang = p.jenis !== "CupCookies";
+      const nilaiTampil = isUang ? formatRupiah(p.jumlah) : `${p.jumlah} pcs`;
+      const jenisLabel = isUang ? "Uang" : "Cup+Cookies";
       return `
         <div class="receipt-line" data-idx="${idx}">
-          <span>${p.keterangan || p.tipe} <span style="font-size:11px; color:${warna};">(${p.tipe})</span></span>
-          <span class="val">${tanda}${formatRupiah(p.jumlah)} <a href="#" class="removePenyesuaian" style="color:var(--danger); margin-left:6px;">✕</a></span>
+          <span>${p.keterangan || p.tipe} <span style="font-size:11px; color:${warna};">(${p.tipe} · ${jenisLabel})</span></span>
+          <span class="val">${tanda}${nilaiTampil} <a href="#" class="removePenyesuaian" style="color:var(--danger); margin-left:6px;">✕</a></span>
         </div>`;
     }).join("");
     listEl.querySelectorAll(".removePenyesuaian").forEach(a => {
@@ -1716,19 +1736,34 @@ function renderPenyesuaian(){
     });
   }
 }
-attachRupiahInput($("hrPenyesuaianJumlah"));
+let hrPenyesuaianJenis = "Uang";
+$("hrPenyesuaianJenisUangBtn").addEventListener("click", () => setHrPenyesuaianJenis("Uang"));
+$("hrPenyesuaianJenisCupBtn").addEventListener("click", () => setHrPenyesuaianJenis("CupCookies"));
+function setHrPenyesuaianJenis(jenis){
+  hrPenyesuaianJenis = jenis;
+  $("hrPenyesuaianJenisUangBtn").classList.toggle("active", jenis === "Uang");
+  $("hrPenyesuaianJenisCupBtn").classList.toggle("active", jenis === "CupCookies");
+  $("hrPenyesuaianJumlah").placeholder = jenis === "Uang" ? "Rp0" : "Jumlah pcs (mis. 50)";
+  $("hrPenyesuaianJumlah").value = "";
+}
+$("hrPenyesuaianJumlah").addEventListener("input", () => {
+  const input = $("hrPenyesuaianJumlah");
+  const raw = input.value.replace(/[^\d]/g, "");
+  input.value = hrPenyesuaianJenis === "Uang" ? (raw ? "Rp" + Number(raw).toLocaleString("id-ID") : "") : raw;
+});
 $("hrPenyesuaianTambahBtn").addEventListener("click", async () => {
   const tipe = $("hrPenyesuaianTipe").value;
-  const jumlah = parseRupiahInput($("hrPenyesuaianJumlah"));
+  const jenis = hrPenyesuaianJenis;
+  const jumlah = parseRupiahInput($("hrPenyesuaianJumlah")); // ekstrak angka mentah, aman utk kedua jenis
   const keterangan = $("hrPenyesuaianKeterangan").value.trim();
   if(!jumlah || !hrGajiDataCache) return;
   $("hrPenyesuaianTambahBtn").disabled = true;
   try{
     const res = await apiPost({
       action: "tambahPenyesuaianGaji", rider: hrGajiDataCache.rider,
-      skema: hrGajiDataCache.skema, bulan: hrGajiDataCache.bulan, tipe, keterangan, jumlah
+      skema: hrGajiDataCache.skema, bulan: hrGajiDataCache.bulan, jenis, tipe, keterangan, jumlah
     });
-    hrPenyesuaianList.push({ id: res.id, tipe, jumlah, keterangan });
+    hrPenyesuaianList.push({ id: res.id, jenis, tipe, jumlah, keterangan });
     $("hrPenyesuaianJumlah").value = "";
     $("hrPenyesuaianKeterangan").value = "";
     renderSlipGaji(hrGajiDataCache); // slip ikut update (baris Penyesuaian & Dibayar Bulanan ada di situ)
