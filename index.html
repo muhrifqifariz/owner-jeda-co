@@ -27,6 +27,12 @@
     box-shadow:0 4px 14px rgba(0,0,0,0.12);
   }
   header .brand{ display:flex; align-items:center; gap:12px; }
+  .zoom-controls{ margin-left:auto; display:flex; gap:4px; }
+  .zoom-controls button{
+    width:34px; height:34px; border-radius:8px; border:none;
+    background:rgba(255,255,255,0.18); color:#fff; font-size:13px; font-weight:700; cursor:pointer;
+  }
+  .zoom-controls button:active{ background:rgba(255,255,255,0.32); }
   header .brand img{ height:40px; width:auto; }
   header .eyebrow{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; opacity:.8; margin:0 0 4px; }
   header h1{ margin:0; font-family:Georgia, serif; font-size:22px; font-weight:700; }
@@ -239,6 +245,10 @@
       <p class="eyebrow">Panel Owner</p>
       <h1>Jeda Owner</h1>
     </div>
+    <div class="zoom-controls">
+      <button type="button" id="zoomOutBtn" aria-label="Perkecil teks">A−</button>
+      <button type="button" id="zoomInBtn" aria-label="Perbesar teks">A+</button>
+    </div>
   </div>
   <div class="tabs-group">
     <button class="group-btn active" data-group="penjualanGroup">Uang Masuk</button>
@@ -421,6 +431,8 @@
       <div id="procSubKategoriWrap" style="display:none;">
         <label for="procSubKategori">Sub Kategori Gaji</label>
         <select id="procSubKategori"><option value="">— Pilih —</option></select>
+        <label for="procNamaKaryawan">Nama Karyawan</label>
+        <select id="procNamaKaryawan"><option value="">— Pilih —</option></select>
       </div>
       <div class="row2">
         <div>
@@ -476,6 +488,9 @@
           <option value="">Semua Kategori</option>
         </select>
       </div>
+      <select id="procInquiryKaryawan" style="border:none; padding:6px; margin-top:8px; display:none;">
+        <option value="">Semua Karyawan</option>
+      </select>
     </div>
 
     <div id="procurementInquiryList"></div>
@@ -664,7 +679,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-25-cupcookiespenyesuaian-v14";
+const APP_VERSION = "2026-08-25-filterkaryawan-v17";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1066,7 +1081,7 @@ async function openInvoice(transaksiId){
     }
 
     setInvoiceStatusButtons(detail.statusBayar);
-    $("editInvoiceBtn").style.display = detail.statusBayar === "PO" ? "block" : "none";
+    $("editInvoiceBtn").style.display = "block";
     $("invoiceStatusMsg").textContent = "";
   }catch(e){
     $("invoiceStatusMsg").textContent = "Gagal memuat: " + e.message;
@@ -1265,7 +1280,7 @@ function renderBelumDibayar(list){
             <div class="meta">${t.penjual} · ${t.jumlahItem} item${t.discount > 0 ? ` · diskon ${formatRupiah(t.discount)}` : ''}</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
-            ${t.status === "PO" ? '<button class="icon-btn editPoBtn" style="font-size:11px;">Edit</button>' : ''}
+            <button class="icon-btn editPoBtn" style="font-size:11px;">Edit</button>
             ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
             ${t.status !== "Sudah Dibayar" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
           </div>
@@ -1354,9 +1369,14 @@ $("procKategori").addEventListener("change", () => {
   if(isGaji){
     $("procSubKategori").innerHTML = '<option value="">— Pilih —</option>' +
       subKategoriGajiList.map(s => `<option value="${s}">${s}</option>`).join("");
+    $("procNamaKaryawan").innerHTML = '<option value="">— Pilih —</option>' +
+      daftarKaryawanUntukGaji.map(r => `<option value="${r}">${r}</option>`).join("");
   } else {
     $("procSubKategori").value = "";
   }
+});
+$("procNamaKaryawan").addEventListener("change", () => {
+  if($("procNamaKaryawan").value) $("procNama").value = $("procNamaKaryawan").value;
 });
 $("addProcItemBtn").addEventListener("click", () => {
   const namaProduct = $("procNama").value.trim();
@@ -1504,13 +1524,19 @@ async function refreshDaftarKaryawanCache(){
   }catch(e){ /* diam, tidak fatal */ }
 }
 async function populateHrRiderDropdowns(){
-  if($("hrKehadiranRider").options.length > 1) return; // sudah pernah diisi
+  // SENGAJA tidak di-cache/skip -- selalu ambil ulang tiap kali dipanggil,
+  // supaya kalau ada rider baru ditambahkan di sheet Rider, langsung
+  // muncul di dropdown tanpa perlu reload app dari awal.
   try{
     const data = await apiGet({}); // action default -> termasuk daftar riders
     const riders = data.riders || [];
     const optionsHtml = '<option value="">— Pilih Rider —</option>' + riders.map(r => `<option value="${r}">${r}</option>`).join("");
+    const currentKehadiran = $("hrKehadiranRider").value;
+    const currentGaji = $("hrGajiRider").value;
     $("hrKehadiranRider").innerHTML = optionsHtml;
     $("hrGajiRider").innerHTML = optionsHtml;
+    if(riders.includes(currentKehadiran)) $("hrKehadiranRider").value = currentKehadiran;
+    if(riders.includes(currentGaji)) $("hrGajiRider").value = currentGaji;
   }catch(e){ /* diam */ }
 }
 
@@ -1914,7 +1940,6 @@ let allProcurementCache = [];
 let allGajiCache = [];
 let procurementSummaryCache = {}; // dari server: { "yyyy-MM": { kategori: total } }, dihitung dari SEMUA data
 let inquiryPoolAktif = "procurement"; // "procurement" atau "gaji"
-const KATEGORI_PROCUREMENT_NON_GAJI = ["Bahan Baku", "Packaging", "Aset / Capex", "Operating Expense", "Owner Withdrawal"];
 const SUBKATEGORI_GAJI_FILTER = ["Gaji Dasar", "Insentif Harian", "Bonus"];
 
 async function loadProcurementInquiry(){
@@ -1928,6 +1953,7 @@ async function loadProcurementInquiry(){
     updateInquiryTruncatedNote(data);
     populateProcInquiryBulan();
     populateProcInquiryKategori();
+    populateProcInquiryKaryawan();
     applyProcInquiryFilter();
   }catch(e){
     container.innerHTML = "";
@@ -1945,7 +1971,10 @@ function updateInquiryTruncatedNote(data){
 }
 function populateProcInquiryKategori(){
   const select = $("procInquiryFilter");
-  const opsi = inquiryPoolAktif === "gaji" ? SUBKATEGORI_GAJI_FILTER : KATEGORI_PROCUREMENT_NON_GAJI;
+  // Kategori Uang Keluar diambil LANGSUNG dari kategoriProductList (dikelola user
+  // via tab Category) -- bukan daftar hardcode, jadi otomatis ikut kalau ada
+  // kategori baru ditambah/dihapus. "Gaji" dikecualikan krn sudah jadi pool sendiri.
+  const opsi = inquiryPoolAktif === "gaji" ? SUBKATEGORI_GAJI_FILTER : kategoriProductList.filter(k => k !== "Gaji");
   const label = inquiryPoolAktif === "gaji" ? "Semua Sub Kategori" : "Semua Kategori";
   select.innerHTML = `<option value="">${label}</option>` + opsi.map(k => `<option value="${k}">${k}</option>`).join("");
 }
@@ -1954,8 +1983,23 @@ function switchInquiryPool(pool){
   $("inquiryPoolProcurementBtn").classList.toggle("active", pool === "procurement");
   $("inquiryPoolGajiBtn").classList.toggle("active", pool === "gaji");
   populateProcInquiryKategori();
+  populateProcInquiryKaryawan();
   applyProcInquiryFilter();
 }
+function populateProcInquiryKaryawan(){
+  const select = $("procInquiryKaryawan");
+  if(inquiryPoolAktif === "gaji"){
+    select.style.display = "block";
+    if(select.options.length <= 1){
+      select.innerHTML = '<option value="">Semua Karyawan</option>' +
+        daftarKaryawanUntukGaji.map(r => `<option value="${r}">${r}</option>`).join("");
+    }
+  } else {
+    select.style.display = "none";
+    select.value = "";
+  }
+}
+$("procInquiryKaryawan").addEventListener("change", applyProcInquiryFilter);
 $("inquiryPoolProcurementBtn").addEventListener("click", () => switchInquiryPool("procurement"));
 $("inquiryPoolGajiBtn").addEventListener("click", () => switchInquiryPool("gaji"));
 function bulanKeyOf(tanggalPembelian){ return (tanggalPembelian || "").slice(0, 7); } // "yyyy-MM"
@@ -1976,11 +2020,15 @@ function populateProcInquiryBulan(){
 function applyProcInquiryFilter(){
   const kategoriFilter = $("procInquiryFilter").value;
   const bulanFilter = $("procInquiryBulan").value;
+  const karyawanFilter = $("procInquiryKaryawan").value;
   const sumberData = inquiryPoolAktif === "gaji" ? allGajiCache : allProcurementCache;
   const byBulan = bulanFilter ? sumberData.filter(p => bulanKeyOf(p.tanggalPembelian) === bulanFilter) : sumberData;
-  const filtered = kategoriFilter
+  const byKategori = kategoriFilter
     ? byBulan.filter(p => inquiryPoolAktif === "gaji" ? p.subKategori === kategoriFilter : p.kategoriProduct === kategoriFilter)
     : byBulan;
+  const filtered = (inquiryPoolAktif === "gaji" && karyawanFilter)
+    ? byKategori.filter(p => (p.namaProduct || "").includes(karyawanFilter))
+    : byKategori;
   renderProcurementInquiry(filtered);
 }
 $("procInquiryFilter").addEventListener("change", applyProcInquiryFilter);
@@ -2120,7 +2168,7 @@ function renderProcurementInquiry(list){
   container.innerHTML = list.map(p => {
     const tanggalStr = new Date(p.tanggalPembelian + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
     return `
-      <div class="bill-item">
+      <div class="bill-item" data-id="${p.id}">
         <div class="top">
           <span class="customer">${p.namaProduct}</span>
           <span class="tanggal">${tanggalStr}</span>
@@ -2134,9 +2182,87 @@ function renderProcurementInquiry(list){
             <div class="rp">${formatRupiah(p.totalHarga)}</div>
             <div class="meta">${p.quantity} ${p.satuanPurchase} → setara ${p.quantity * p.konversi} ${p.satuanStock}</div>
           </div>
+          <button class="icon-btn editProcItemBtn" style="font-size:11px;">Edit</button>
         </div>
       </div>`;
   }).join("");
+  container.querySelectorAll(".editProcItemBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const row = btn.closest(".bill-item");
+      const item = list.find(p => p.id === row.dataset.id);
+      if(item) bukaEditProcurementItem(row, item);
+    });
+  });
+}
+
+function bukaEditProcurementItem(row, item){
+  const jenisOpts = jenisProductList.map(j => `<option value="${j}" ${j===item.jenisProduct?'selected':''}>${j}</option>`).join("");
+  const kategoriOpts = kategoriProductList.map(k => `<option value="${k}" ${k===item.kategoriProduct?'selected':''}>${k}</option>`).join("");
+  const satuanOpts = (current) => satuanList.map(s => `<option value="${s}" ${s===current?'selected':''}>${s}</option>`).join("");
+  const subKategoriWrap = item.kategoriProduct === "Gaji"
+    ? `<label>Sub Kategori Gaji</label><select class="editProcSubKategori">${subKategoriGajiList.map(s=>`<option value="${s}" ${s===item.subKategori?'selected':''}>${s}</option>`).join("")}</select>
+       <label>Nama Karyawan</label><select class="editProcNamaKaryawan"><option value="">— Pilih —</option>${daftarKaryawanUntukGaji.map(r=>`<option value="${r}">${r}</option>`).join("")}</select>`
+    : "";
+  row.innerHTML = `
+    <label>Nama/Merk Product</label>
+    <input type="text" class="editProcNama" value="${item.namaProduct}">
+    <label>Tanggal Pembelian</label>
+    <input type="date" class="editProcTanggal" value="${item.tanggalPembelian}">
+    <label>Type</label>
+    <select class="editProcJenis">${jenisOpts}</select>
+    <label>Category</label>
+    <select class="editProcKategori">${kategoriOpts}</select>
+    <div class="editProcSubKategoriWrap">${subKategoriWrap}</div>
+    <div class="row2">
+      <div><label>Total Harga</label><input type="text" class="editProcTotal" inputmode="numeric" value="Rp${Number(item.totalHarga).toLocaleString('id-ID')}"></div>
+      <div><label>Quantity</label><input type="number" class="editProcQty" value="${item.quantity}"></div>
+    </div>
+    <div class="row2">
+      <div><label>Satuan Purchase</label><select class="editProcSatuanPurchase">${satuanOpts(item.satuanPurchase)}</select></div>
+      <div><label>Konversi</label><input type="number" class="editProcKonversi" value="${item.konversi}"></div>
+    </div>
+    <label>Satuan Stock</label>
+    <select class="editProcSatuanStock">${satuanOpts(item.satuanStock)}</select>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button class="primary saveProcItemBtn" style="flex:1;">Simpan</button>
+      <button type="button" class="cancelProcItemBtn" style="flex:1; padding:10px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink-soft); font-weight:600;">Batal</button>
+    </div>
+  `;
+  attachRupiahInput(row.querySelector(".editProcTotal"));
+  const namaKaryawanSelect = row.querySelector(".editProcNamaKaryawan");
+  if(namaKaryawanSelect){
+    namaKaryawanSelect.addEventListener("change", () => {
+      if(namaKaryawanSelect.value) row.querySelector(".editProcNama").value = namaKaryawanSelect.value;
+    });
+  }
+  row.querySelector(".editProcKategori").addEventListener("change", (e) => {
+    bukaEditProcurementItem(row, Object.assign({}, item, { kategoriProduct: e.target.value }));
+  });
+  row.querySelector(".cancelProcItemBtn").addEventListener("click", () => applyProcInquiryFilter());
+  row.querySelector(".saveProcItemBtn").addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    const subSelect = row.querySelector(".editProcSubKategori");
+    try{
+      await apiPost({
+        action: "updateProcurementItem", id: item.id,
+        namaProduct: row.querySelector(".editProcNama").value.trim(),
+        tanggalPembelian: row.querySelector(".editProcTanggal").value,
+        jenisProduct: row.querySelector(".editProcJenis").value,
+        kategoriProduct: row.querySelector(".editProcKategori").value,
+        subKategori: subSelect ? subSelect.value : "",
+        totalHarga: parseRupiahInput(row.querySelector(".editProcTotal")),
+        quantity: parseFloat(row.querySelector(".editProcQty").value) || 0,
+        satuanPurchase: row.querySelector(".editProcSatuanPurchase").value,
+        konversi: parseFloat(row.querySelector(".editProcKonversi").value) || 1,
+        satuanStock: row.querySelector(".editProcSatuanStock").value
+      });
+      loadProcurementInquiry();
+    }catch(err){
+      $("procurementInquiryStatusMsg").textContent = "Gagal simpan: " + err.message;
+      $("procurementInquiryStatusMsg").className = "status err";
+      e.target.disabled = false;
+    }
+  });
 }
 
 function renderKategoriProductList(){
@@ -2336,7 +2462,33 @@ $("addMenuOwnerBtn").addEventListener("click", async () => {
   }
 });
 
+// ---------- Zoom Font (A-/A+) ----------
+const ZOOM_STEPS = [85, 92, 100, 108, 116, 125, 135]; // persen
+let zoomIndex = ZOOM_STEPS.indexOf(parseInt(localStorage.getItem("jeda_owner_zoom")) || 100);
+if(zoomIndex < 0) zoomIndex = ZOOM_STEPS.indexOf(100);
+function terapkanZoom(){
+  document.body.style.zoom = ZOOM_STEPS[zoomIndex] + "%";
+  localStorage.setItem("jeda_owner_zoom", ZOOM_STEPS[zoomIndex]);
+}
+terapkanZoom(); // terapkan langsung sesuai pilihan terakhir, sebelum user klik apa pun
+$("zoomInBtn").addEventListener("click", () => {
+  if(zoomIndex < ZOOM_STEPS.length - 1) zoomIndex++;
+  terapkanZoom();
+});
+$("zoomOutBtn").addEventListener("click", () => {
+  if(zoomIndex > 0) zoomIndex--;
+  terapkanZoom();
+});
+
 // ---------- Start ----------
+let daftarKaryawanUntukGaji = [];
+async function muatDaftarKaryawanUntukGaji(){
+  try{
+    const data = await apiGet({});
+    daftarKaryawanUntukGaji = data.riders || [];
+  }catch(e){ /* diam, tidak fatal */ }
+}
+muatDaftarKaryawanUntukGaji();
 loadOwnerInit();
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
