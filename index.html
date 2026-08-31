@@ -254,6 +254,11 @@
     <button class="group-btn active" data-group="penjualanGroup">Uang Masuk</button>
     <button class="group-btn" data-group="procurementGroup">Uang Keluar</button>
     <button class="group-btn" data-group="hrGroup">HR</button>
+    <button class="group-btn" data-group="resepGroup">Resep</button>
+  </div>
+  <div class="tabs" id="resepGroup" style="display:none;">
+    <button class="tab-btn active" data-screen="resepScreen">Detail Resep</button>
+    <button class="tab-btn" data-screen="bahanTurunanScreen">Bahan Turunan</button>
   </div>
   <div class="tabs" id="penjualanGroup">
     <button class="tab-btn active" data-screen="penjualanScreen">Input</button>
@@ -638,6 +643,87 @@
     <p class="status" id="hrKaryawanStatusMsg"></p>
   </section>
 
+  <!-- ===================== RESEP ===================== -->
+  <section class="screen" id="resepScreen">
+    <p class="form-section-title" style="margin-top:0">Detail Resep</p>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">
+      Satu resep berlaku utk Jeda Owner &amp; Jeda Rider sekaligus (menu nama
+      sama = resep sama, tidak digandakan). Jumlah bahan selalu per 1 Cup
+      (Minuman) atau 1 Pcs (Cookies) — varian 500ml/1 Liter otomatis dikali
+      4x/8x, tidak perlu diisi terpisah.
+    </p>
+    <div class="card">
+      <label for="resepMenuSelect">Pilih Menu</label>
+      <select id="resepMenuSelect"><option value="">— Pilih Menu —</option></select>
+    </div>
+
+    <div id="resepDetailWrap" style="display:none;">
+      <div class="card" id="resepBahanListCard"></div>
+
+      <div class="card">
+        <p class="form-section-title" style="margin-top:0">Tambah Bahan</p>
+        <label>Tipe Bahan</label>
+        <div class="row2">
+          <button type="button" class="pool-toggle-btn active" id="resepTipeBakuBtn">Bahan Baku</button>
+          <button type="button" class="pool-toggle-btn" id="resepTipeTurunanBtn">Bahan Turunan</button>
+        </div>
+        <div id="resepBakuWrap">
+          <label for="resepBahanNama">Nama Bahan Baku</label>
+          <input type="text" id="resepBahanNama" placeholder="mis. Susu Bubuk Dancow">
+        </div>
+        <div id="resepTurunanWrap" style="display:none;">
+          <label for="resepBahanTurunanSelect">Pilih Bahan Turunan</label>
+          <select id="resepBahanTurunanSelect"><option value="">— Pilih —</option></select>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="resepBahanJumlah">Jumlah per Cup/Pcs</label>
+            <input type="number" id="resepBahanJumlah" step="any" placeholder="0">
+          </div>
+          <div>
+            <label for="resepBahanSatuan">Satuan</label>
+            <select id="resepBahanSatuan"><option value="">— Pilih —</option></select>
+          </div>
+        </div>
+        <button class="primary" id="resepTambahBahanBtn" style="margin-top:10px;">+ Tambah Bahan</button>
+      </div>
+
+      <div class="card" id="resepKonversiCard" style="display:none;"></div>
+    </div>
+    <p class="status" id="resepStatusMsg"></p>
+  </section>
+
+  <!-- ===================== BAHAN TURUNAN ===================== -->
+  <section class="screen" id="bahanTurunanScreen">
+    <p class="form-section-title" style="margin-top:0">Bahan Turunan</p>
+    <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">
+      Bahan hasil produksi sendiri (mis. Es Batu) yang biayanya dialokasikan
+      dari pengeluaran Opex (Listrik, Filter Air, dll), bukan dibeli
+      langsung per unit. Biaya per unit dihitung otomatis dari data
+      Procurement bulan berjalan.
+    </p>
+
+    <div class="card">
+      <p class="form-section-title" style="margin-top:0">Tambah Bahan Turunan Baru</p>
+      <label for="btNamaBaru">Nama Bahan Turunan</label>
+      <input type="text" id="btNamaBaru" placeholder="mis. Es Batu">
+      <div class="row2">
+        <div>
+          <label for="btSatuanBaru">Satuan</label>
+          <input type="text" id="btSatuanBaru" placeholder="mis. gram">
+        </div>
+        <div>
+          <label for="btProduksiBaru">Produksi per Hari</label>
+          <input type="number" id="btProduksiBaru" step="any" placeholder="mis. 25000">
+        </div>
+      </div>
+      <button class="primary" id="btTambahBtn" style="margin-top:10px;">+ Tambah Bahan Turunan</button>
+    </div>
+
+    <div id="btListCard"></div>
+    <p class="status" id="btStatusMsg"></p>
+  </section>
+
   <!-- ===================== SETTING MENU ===================== -->
   <section class="screen" id="settingMenuScreen">
     <div class="card" id="menuOwnerManageCard"></div>
@@ -679,7 +765,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-25-filterkaryawan-v17";
+const APP_VERSION = "2026-08-30-bulandepan-v21";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -740,6 +826,8 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "hrKehadiranScreen") loadHrTab("kehadiran");
     if(btn.dataset.screen === "hrGajiScreen") loadHrTab("gaji");
     if(btn.dataset.screen === "hrKaryawanScreen") loadHrTab("karyawan");
+    if(btn.dataset.screen === "resepScreen") loadResepTab();
+    if(btn.dataset.screen === "bahanTurunanScreen") loadBahanTurunanTab();
   });
 });
 document.querySelectorAll(".group-btn").forEach(btn => {
@@ -1494,7 +1582,7 @@ let daftarKaryawanCache = []; // [{rider, tanggalMulai, tanggalSelesai}]
 function bulanOptionsTerakhir(n){
   const opts = [];
   const now = new Date();
-  for(let i = 0; i < n; i++){
+  for(let i = -1; i < n - 1; i++){ // i=-1 -> 1 bulan ke depan, sisanya mundur ke belakang
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
     const label = d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
@@ -1864,6 +1952,337 @@ function renderKaryawan(){
     }
     mulaiInput.addEventListener("change", simpan);
     selesaiInput.addEventListener("change", simpan);
+  });
+}
+
+// ---------- Resep ----------
+let daftarMenuUnikCache = [];
+let daftarBahanTurunanCache = [];
+let resepMenuAktif = null; // {namaMenu, kategori}
+let resepBahanCache = [];
+
+async function loadResepTab(){
+  if(!daftarMenuUnikCache.length){
+    try{
+      const data = await apiGet({ action: "getDaftarMenuUnik" });
+      daftarMenuUnikCache = data.daftarMenu || [];
+      $("resepMenuSelect").innerHTML = '<option value="">— Pilih Menu —</option>' +
+        daftarMenuUnikCache.map(m => `<option value="${m.namaMenu}">${m.namaMenu} (${m.kategori})</option>`).join("");
+    }catch(e){
+      $("resepStatusMsg").textContent = "Gagal memuat daftar menu: " + e.message;
+      $("resepStatusMsg").className = "status err";
+    }
+  }
+  if($("resepBahanSatuan").options.length <= 1){
+    $("resepBahanSatuan").innerHTML = '<option value="">— Pilih —</option>' +
+      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+  }
+  try{
+    const dataBt = await apiGet({ action: "getDaftarBahanTurunan" });
+    daftarBahanTurunanCache = dataBt.daftar || [];
+    $("resepBahanTurunanSelect").innerHTML = '<option value="">— Pilih —</option>' +
+      daftarBahanTurunanCache.map(b => `<option value="${b.nama}">${b.nama} (${formatRupiah(b.biayaPerUnit)}/${b.satuan})</option>`).join("");
+  }catch(e){ /* diam, tidak fatal */ }
+}
+let resepTipeBahanAktif = "Baku";
+$("resepTipeBakuBtn").addEventListener("click", () => setResepTipeBahan("Baku"));
+$("resepTipeTurunanBtn").addEventListener("click", () => setResepTipeBahan("Turunan"));
+function setResepTipeBahan(tipe){
+  resepTipeBahanAktif = tipe;
+  $("resepTipeBakuBtn").classList.toggle("active", tipe === "Baku");
+  $("resepTipeTurunanBtn").classList.toggle("active", tipe === "Turunan");
+  $("resepBakuWrap").style.display = tipe === "Baku" ? "block" : "none";
+  $("resepTurunanWrap").style.display = tipe === "Turunan" ? "block" : "none";
+}
+$("resepBahanTurunanSelect").addEventListener("change", () => {
+  const b = daftarBahanTurunanCache.find(x => x.nama === $("resepBahanTurunanSelect").value);
+  if(b) $("resepBahanSatuan").value = b.satuan;
+});
+$("resepMenuSelect").addEventListener("change", async () => {
+  const nama = $("resepMenuSelect").value;
+  if(!nama){ $("resepDetailWrap").style.display = "none"; return; }
+  resepMenuAktif = daftarMenuUnikCache.find(m => m.namaMenu === nama);
+  $("resepDetailWrap").style.display = "block";
+  await muatResepMenu(nama);
+});
+async function muatResepMenu(namaMenu){
+  const card = $("resepBahanListCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("resepStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getResepMenu", namaMenu });
+    resepBahanCache = data.bahan || [];
+    renderResepBahan();
+    renderResepKonversi();
+  }catch(e){
+    card.innerHTML = "";
+    $("resepStatusMsg").textContent = "Gagal memuat resep: " + e.message;
+    $("resepStatusMsg").className = "status err";
+  }
+}
+function renderResepBahan(){
+  const card = $("resepBahanListCard");
+  if(!resepBahanCache.length){
+    card.innerHTML = '<p class="empty-note">Belum ada bahan baku utk menu ini.</p>';
+    return;
+  }
+  card.innerHTML = resepBahanCache.map(b => `
+    <div class="receipt-line" data-id="${b.id}">
+      <span>${b.bahanBaku}${b.tipeBahan === "Turunan" ? ' <span style="font-size:10px; font-weight:700; color:#fff; background:var(--gold); padding:1px 6px; border-radius:6px;">TURUNAN</span>' : ''}</span>
+      <span class="val">${b.jumlah} ${b.satuan} <a href="#" class="hapusBahanBtn" style="color:var(--danger); margin-left:6px;">✕</a></span>
+    </div>`).join("");
+  card.querySelectorAll(".hapusBahanBtn").forEach(a => {
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const id = a.closest(".receipt-line").dataset.id;
+      a.textContent = "…";
+      try{
+        await apiPost({ action: "hapusResepBahan", id });
+        resepBahanCache = resepBahanCache.filter(b => b.id !== id);
+        renderResepBahan();
+        renderResepKonversi();
+      }catch(err){
+        $("resepStatusMsg").textContent = "Gagal hapus: " + err.message;
+        $("resepStatusMsg").className = "status err";
+      }
+    });
+  });
+}
+function renderResepKonversi(){
+  const wrap = $("resepKonversiCard");
+  if(!resepMenuAktif || resepMenuAktif.kategori !== "Minuman" || !resepBahanCache.length){
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "block";
+  function baris(label, kali){
+    return `<div class="receipt-line"><span style="font-weight:700;">${label}</span><span></span></div>` +
+      resepBahanCache.map(b => `<div class="receipt-line"><span>${b.bahanBaku}</span><span class="val">${(b.jumlah * kali).toLocaleString("id-ID")} ${b.satuan}</span></div>`).join("");
+  }
+  wrap.innerHTML = `<p class="form-section-title" style="margin-top:0">Konversi Ukuran</p>` +
+    baris("Per Cup (x1)", 1) + baris("Per 500ml (x4)", 4) + baris("Per 1 Liter (x8)", 8);
+}
+$("resepTambahBahanBtn").addEventListener("click", async () => {
+  const bahanBaku = resepTipeBahanAktif === "Turunan" ? $("resepBahanTurunanSelect").value : $("resepBahanNama").value.trim();
+  const jumlah = parseFloat($("resepBahanJumlah").value) || 0;
+  const satuan = $("resepBahanSatuan").value;
+  if(!bahanBaku || !jumlah || !satuan || !resepMenuAktif) return;
+  $("resepTambahBahanBtn").disabled = true;
+  try{
+    const res = await apiPost({
+      action: "tambahResepBahan", namaMenu: resepMenuAktif.namaMenu,
+      kategori: resepMenuAktif.kategori, bahanBaku, jumlah, satuan, tipeBahan: resepTipeBahanAktif
+    });
+    resepBahanCache.push({ id: res.id, bahanBaku, jumlah, satuan, tipeBahan: resepTipeBahanAktif });
+    $("resepBahanNama").value = "";
+    $("resepBahanTurunanSelect").value = "";
+    $("resepBahanJumlah").value = "";
+    $("resepBahanSatuan").value = "";
+    renderResepBahan();
+    renderResepKonversi();
+  }catch(err){
+    $("resepStatusMsg").textContent = "Gagal simpan: " + err.message;
+    $("resepStatusMsg").className = "status err";
+  }finally{
+    $("resepTambahBahanBtn").disabled = false;
+  }
+});
+
+// ---------- Bahan Turunan ----------
+let btDetailTerbukaCache = {}; // {namaBahanTurunan: {komponen, totalBiayaBulanan, ...}}
+
+async function loadBahanTurunanTab(){
+  const card = $("btListCard");
+  card.innerHTML = '<p class="empty-note">Memuat...</p>';
+  $("btStatusMsg").textContent = "";
+  try{
+    const data = await apiGet({ action: "getDaftarBahanTurunan" });
+    daftarBahanTurunanCache = data.daftar || [];
+    renderBtList();
+  }catch(e){
+    card.innerHTML = "";
+    $("btStatusMsg").textContent = "Gagal memuat: " + e.message;
+    $("btStatusMsg").className = "status err";
+  }
+}
+$("btTambahBtn").addEventListener("click", async () => {
+  const nama = $("btNamaBaru").value.trim();
+  const satuan = $("btSatuanBaru").value.trim();
+  const produksiPerHari = parseFloat($("btProduksiBaru").value) || 0;
+  if(!nama || !satuan || !produksiPerHari) return;
+  $("btTambahBtn").disabled = true;
+  try{
+    await apiPost({ action: "tambahBahanTurunan", nama, satuan, produksiPerHari });
+    $("btNamaBaru").value = ""; $("btSatuanBaru").value = ""; $("btProduksiBaru").value = "";
+    await loadBahanTurunanTab();
+  }catch(err){
+    $("btStatusMsg").textContent = "Gagal simpan: " + err.message;
+    $("btStatusMsg").className = "status err";
+  }finally{
+    $("btTambahBtn").disabled = false;
+  }
+});
+function renderBtList(){
+  const card = $("btListCard");
+  if(!daftarBahanTurunanCache.length){
+    card.innerHTML = '<p class="empty-note">Belum ada Bahan Turunan.</p>';
+    return;
+  }
+  card.innerHTML = daftarBahanTurunanCache.map(b => `
+    <div class="card" data-nama="${b.nama}">
+      <div class="receipt-line" style="padding:0;">
+        <span style="font-weight:700; font-size:15px;">${b.nama}</span>
+        <a href="#" class="hapusBtBtn" style="color:var(--danger); font-size:12px;">Hapus</a>
+      </div>
+      <div class="receipt-line"><span>Produksi per Hari</span><span class="val">${b.produksiPerHari} ${b.satuan}</span></div>
+      <div class="receipt-line"><span>Total Biaya Bulanan</span><span class="val">${formatRupiah(b.totalBiayaBulanan)}</span></div>
+      <div class="receipt-line subtotal"><span>Biaya per ${b.satuan}</span><span class="val">${formatRupiah(b.biayaPerUnit)}</span></div>
+      <button type="button" class="btKelolaKomponenBtn" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink-soft); font-weight:600; cursor:pointer;">Kelola Komponen Biaya</button>
+      <div class="btKomponenWrap" style="display:none; margin-top:10px;"></div>
+    </div>
+  `).join("");
+
+  card.querySelectorAll(".hapusBtBtn").forEach(a => {
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const nama = a.closest(".card").dataset.nama;
+      if(!confirm(`Hapus Bahan Turunan "${nama}" beserta semua komponen biayanya?`)) return;
+      try{
+        await apiPost({ action: "hapusBahanTurunan", nama });
+        await loadBahanTurunanTab();
+      }catch(err){
+        $("btStatusMsg").textContent = "Gagal hapus: " + err.message;
+        $("btStatusMsg").className = "status err";
+      }
+    });
+  });
+  card.querySelectorAll(".btKelolaKomponenBtn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const wrap = btn.nextElementSibling;
+      const nama = btn.closest(".card").dataset.nama;
+      const buka = wrap.style.display === "none";
+      wrap.style.display = buka ? "block" : "none";
+      btn.textContent = buka ? "Tutup Komponen Biaya" : "Kelola Komponen Biaya";
+      if(buka) await muatBtKomponen(nama, wrap);
+    });
+  });
+}
+async function muatBtKomponen(nama, wrap){
+  wrap.innerHTML = '<p class="empty-note">Memuat...</p>';
+  try{
+    const data = await apiGet({ action: "getDetailBahanTurunan", nama });
+    btDetailTerbukaCache[nama] = data;
+    renderBtKomponen(nama, wrap);
+  }catch(e){
+    wrap.innerHTML = `<p class="status err">Gagal memuat: ${e.message}</p>`;
+  }
+}
+function renderBtKomponen(nama, wrap){
+  const data = btDetailTerbukaCache[nama];
+  function labelNilai(k){
+    if(k.jenisAlokasi === "Biaya Periodik") return formatRupiah(k.nilai) + " / " + k.nilai2 + " bln";
+    if(k.jenisAlokasi === "kWh Langsung") return k.nilai + " kWh × " + formatRupiah(k.nilai2) + "/kWh";
+    return k.nilai + "%";
+  }
+  const listHtml = data.komponen.length
+    ? data.komponen.map(k => `
+        <div class="receipt-line" data-id="${k.id}">
+          <span>${k.namaBiayaSumber}${k.kategoriSumber ? " (" + k.kategoriSumber + ")" : ""} — ${labelNilai(k)}</span>
+          <span class="val">${formatRupiah(k.biayaBulanIni)} <a href="#" class="hapusKomponenBtn" style="color:var(--danger); margin-left:6px;">✕</a></span>
+        </div>`).join("")
+    : '<p class="empty-note">Belum ada komponen biaya.</p>';
+  wrap.innerHTML = `
+    ${listHtml}
+    <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);">
+      <label>Nama Biaya Sumber (dicari di Nama Procurement)</label>
+      <input type="text" class="btKompNama" placeholder="mis. Listrik">
+      <label>Kategori Sumber (Kategori Product)</label>
+      <select class="btKompKategori"><option value="">— Semua Kategori —</option>${kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("")}</select>
+      <label>Jenis Alokasi</label>
+      <div class="row2">
+        <button type="button" class="pool-toggle-btn active btJenisPersenBtn">% Bulanan</button>
+        <button type="button" class="pool-toggle-btn btJenisPeriodikBtn">Biaya Periodik</button>
+      </div>
+      <button type="button" class="pool-toggle-btn btJenisKwhBtn" style="width:100%; margin-top:6px;">kWh Langsung (mis. Listrik mesin es)</button>
+      <div class="btNilaiPersenWrap">
+        <label>Persentase (%)</label>
+        <input type="number" class="btKompNilaiPersen" step="any" placeholder="mis. 30">
+      </div>
+      <div class="btNilaiPeriodikWrap" style="display:none;">
+        <div class="row2">
+          <div><label>Nominal (Rp)</label><input type="text" class="btKompNilaiPeriodik" inputmode="numeric" placeholder="Rp0"></div>
+          <div><label>Periode (bulan)</label><input type="number" class="btKompPeriodeBulan" placeholder="mis. 3"></div>
+        </div>
+      </div>
+      <div class="btNilaiKwhWrap" style="display:none;">
+        <div class="row2">
+          <div><label>kWh per Bulan (mesin es)</label><input type="number" class="btKompKwh" step="any" placeholder="mis. 150"></div>
+          <div><label>Tarif per kWh (Rp)</label><input type="text" class="btKompTarifKwh" inputmode="numeric" placeholder="Rp1.500"></div>
+        </div>
+      </div>
+      <button class="primary btTambahKomponenBtn" style="margin-top:10px;">+ Tambah Komponen</button>
+    </div>
+  `;
+  attachRupiahInput(wrap.querySelector(".btKompNilaiPeriodik"));
+  attachRupiahInput(wrap.querySelector(".btKompTarifKwh"));
+  let jenisAktif = "Persentase Bulanan";
+  const btnPersen = wrap.querySelector(".btJenisPersenBtn");
+  const btnPeriodik = wrap.querySelector(".btJenisPeriodikBtn");
+  const btnKwh = wrap.querySelector(".btJenisKwhBtn");
+  function pilihJenis(jenis){
+    jenisAktif = jenis;
+    btnPersen.classList.toggle("active", jenis === "Persentase Bulanan");
+    btnPeriodik.classList.toggle("active", jenis === "Biaya Periodik");
+    btnKwh.classList.toggle("active", jenis === "kWh Langsung");
+    wrap.querySelector(".btNilaiPersenWrap").style.display = jenis === "Persentase Bulanan" ? "block" : "none";
+    wrap.querySelector(".btNilaiPeriodikWrap").style.display = jenis === "Biaya Periodik" ? "block" : "none";
+    wrap.querySelector(".btNilaiKwhWrap").style.display = jenis === "kWh Langsung" ? "block" : "none";
+  }
+  btnPersen.addEventListener("click", () => pilihJenis("Persentase Bulanan"));
+  btnPeriodik.addEventListener("click", () => pilihJenis("Biaya Periodik"));
+  btnKwh.addEventListener("click", () => pilihJenis("kWh Langsung"));
+  wrap.querySelectorAll(".hapusKomponenBtn").forEach(a => {
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const id = a.closest(".receipt-line").dataset.id;
+      try{
+        await apiPost({ action: "hapusKomponenBiayaTurunan", id });
+        await muatBtKomponen(nama, wrap);
+        await loadBahanTurunanTab(); // refresh angka biaya per unit di kartu utama
+      }catch(err){
+        $("btStatusMsg").textContent = "Gagal hapus: " + err.message;
+        $("btStatusMsg").className = "status err";
+      }
+    });
+  });
+  wrap.querySelector(".btTambahKomponenBtn").addEventListener("click", async (e) => {
+    const namaBiayaSumber = wrap.querySelector(".btKompNama").value.trim();
+    const kategoriSumber = wrap.querySelector(".btKompKategori").value;
+    let nilai = 0, nilai2 = "";
+    if(jenisAktif === "Biaya Periodik"){
+      nilai = parseRupiahInput(wrap.querySelector(".btKompNilaiPeriodik"));
+      nilai2 = parseInt(wrap.querySelector(".btKompPeriodeBulan").value) || 1;
+    } else if(jenisAktif === "kWh Langsung"){
+      nilai = parseFloat(wrap.querySelector(".btKompKwh").value) || 0;
+      nilai2 = parseRupiahInput(wrap.querySelector(".btKompTarifKwh"));
+    } else {
+      nilai = parseFloat(wrap.querySelector(".btKompNilaiPersen").value) || 0;
+    }
+    if(!namaBiayaSumber || !nilai) return;
+    e.target.disabled = true;
+    try{
+      await apiPost({
+        action: "tambahKomponenBiayaTurunan", namaBahanTurunan: nama,
+        namaBiayaSumber, kategoriSumber, jenisAlokasi: jenisAktif, nilai, nilai2
+      });
+      await muatBtKomponen(nama, wrap);
+      await loadBahanTurunanTab();
+    }catch(err){
+      $("btStatusMsg").textContent = "Gagal simpan: " + err.message;
+      $("btStatusMsg").className = "status err";
+    }finally{
+      e.target.disabled = false;
+    }
   });
 }
 
