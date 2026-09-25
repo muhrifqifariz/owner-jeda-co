@@ -623,7 +623,7 @@
     <p class="status" id="hrGajiStatusMsg"></p>
     <p style="font-size:11px; color:var(--ink-soft); text-align:center; margin-top:16px;">
       Perhitungan Gaji ini murni INSIGHT/dasar slip gaji manual — TIDAK
-      otomatis masuk ke Uang Keluar. Libur+Sakit (gabungan) dibayar
+      otomatis masuk ke Uang Keluar. Libur+Sakit+Absen (gabungan) dibayar
       maksimal 4 hari/periode, lebihnya tidak dibayar. Day Off selalu
       dibayar penuh, tidak masuk kuota 4 hari itu. Bonus Bulanan: total
       Cup+Cookies ≥ 1.000 → Rp300.000, ≥ 2.000 → Rp500.000 (bukan
@@ -765,7 +765,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-08-30-bulandepan-v21";
+const APP_VERSION = "2026-09-17-perf-hrfix-v22";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1787,9 +1787,8 @@ function renderSlipGaji(g){
     <h2>Slip Gaji — ${g.rider}</h2>
     <p class="meta" style="text-align:center; margin-top:12px; font-weight:700;">Periode ${periodeLabel}</p>
     <div class="receipt-line"><span>Jumlah Hari Hadir</span><span class="val">${g.jumlahHariHadir} hari</span></div>
-    <div class="receipt-line"><span>Libur + Sakit (${g.jumlahLiburSakit} total)</span><span class="val">${liburSakitNote}</span></div>
+    <div class="receipt-line"><span>Libur + Sakit + Absen (${g.jumlahLiburSakit} total)</span><span class="val">${liburSakitNote}</span></div>
     <div class="receipt-line"><span>Day Off (selalu dibayar)</span><span class="val">${g.jumlahDayOff} hari</span></div>
-    <div class="receipt-line"><span>Absen (tidak dibayar)</span><span class="val">${g.jumlahAbsen} hari</span></div>
     <div class="receipt-line subtotal"><span>Total Hari Dibayar</span><span class="val">${g.jumlahHariDibayar} hari</span></div>
 
     <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--maroon-dark); margin:14px 0 4px;">Dibayar Bulanan</p>
@@ -2912,6 +2911,14 @@ loadOwnerInit();
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+  // Auto-reload SEKALI saat service worker baru ambil alih (abis update) --
+  // sebelumnya user harus refresh manual dulu baru dapet versi terbaru.
+  let swSudahReload = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if(swSudahReload) return;
+    swSudahReload = true;
+    window.location.reload();
   });
 }
 </script>
