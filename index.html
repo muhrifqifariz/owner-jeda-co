@@ -668,8 +668,9 @@
           <button type="button" class="pool-toggle-btn" id="resepTipeTurunanBtn">Bahan Turunan</button>
         </div>
         <div id="resepBakuWrap">
-          <label for="resepBahanNama">Nama Bahan Baku</label>
-          <input type="text" id="resepBahanNama" placeholder="mis. Susu Bubuk Dancow">
+          <label for="resepBahanNama">Pilih Bahan Baku / Packaging</label>
+          <select id="resepBahanNama"><option value="">— Pilih —</option></select>
+          <p class="empty-note" id="resepBahanHargaInfo" style="margin:4px 0 0;"></p>
         </div>
         <div id="resepTurunanWrap" style="display:none;">
           <label for="resepBahanTurunanSelect">Pilih Bahan Turunan</label>
@@ -681,13 +682,14 @@
             <input type="number" id="resepBahanJumlah" step="any" placeholder="0">
           </div>
           <div>
-            <label for="resepBahanSatuan">Satuan</label>
-            <select id="resepBahanSatuan"><option value="">— Pilih —</option></select>
+            <label for="resepBahanSatuan">Satuan (otomatis)</label>
+            <input type="text" id="resepBahanSatuan" readonly placeholder="— pilih bahan dulu —">
           </div>
         </div>
         <button class="primary" id="resepTambahBahanBtn" style="margin-top:10px;">+ Tambah Bahan</button>
       </div>
 
+      <div class="card" id="resepHppCard" style="display:none;"></div>
       <div class="card" id="resepKonversiCard" style="display:none;"></div>
     </div>
     <p class="status" id="resepStatusMsg"></p>
@@ -765,7 +767,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-09-17-perf-hrfix-v22";
+const APP_VERSION = "2026-11-01-resephpp-v23";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1957,6 +1959,7 @@ function renderKaryawan(){
 // ---------- Resep ----------
 let daftarMenuUnikCache = [];
 let daftarBahanTurunanCache = [];
+let daftarBahanBakuResepCache = []; // dari Procurement, disaring Kategori Bahan Baku/Packaging, harga weighted avg
 let resepMenuAktif = null; // {namaMenu, kategori}
 let resepBahanCache = [];
 
@@ -1972,9 +1975,14 @@ async function loadResepTab(){
       $("resepStatusMsg").className = "status err";
     }
   }
-  if($("resepBahanSatuan").options.length <= 1){
-    $("resepBahanSatuan").innerHTML = '<option value="">— Pilih —</option>' +
-      satuanList.map(s => `<option value="${s}">${s}</option>`).join("");
+  try{
+    const dataBb = await apiGet({ action: "getBahanBakuResep" });
+    daftarBahanBakuResepCache = dataBb.bahanBaku || [];
+    $("resepBahanNama").innerHTML = '<option value="">— Pilih —</option>' +
+      daftarBahanBakuResepCache.map(b => `<option value="${b.jenis}">${b.jenis} (${formatRupiah(b.hargaPerUnit)}/${b.satuan})</option>`).join("");
+  }catch(e){
+    $("resepStatusMsg").textContent = "Gagal memuat daftar bahan baku dari Procurement: " + e.message;
+    $("resepStatusMsg").className = "status err";
   }
   try{
     const dataBt = await apiGet({ action: "getDaftarBahanTurunan" });
@@ -1992,7 +2000,23 @@ function setResepTipeBahan(tipe){
   $("resepTipeTurunanBtn").classList.toggle("active", tipe === "Turunan");
   $("resepBakuWrap").style.display = tipe === "Baku" ? "block" : "none";
   $("resepTurunanWrap").style.display = tipe === "Turunan" ? "block" : "none";
+  $("resepBahanSatuan").value = "";
+  $("resepBahanHargaInfo").textContent = "";
 }
+// Bahan Baku/Packaging: satuan & harga per unit SELALU ikut histori
+// pembelian di Procurement (weighted average), TIDAK diketik manual --
+// supaya HPP akurat & konsisten dgn harga beli riil.
+$("resepBahanNama").addEventListener("change", () => {
+  const b = daftarBahanBakuResepCache.find(x => x.jenis === $("resepBahanNama").value);
+  if(b){
+    $("resepBahanSatuan").value = b.satuan;
+    $("resepBahanHargaInfo").textContent =
+      `Harga rata-rata tertimbang: ${formatRupiah(b.hargaPerUnit)} / ${b.satuan} (dari ${b.jumlahTransaksi} transaksi Procurement)`;
+  }else{
+    $("resepBahanSatuan").value = "";
+    $("resepBahanHargaInfo").textContent = "";
+  }
+});
 $("resepBahanTurunanSelect").addEventListener("change", () => {
   const b = daftarBahanTurunanCache.find(x => x.nama === $("resepBahanTurunanSelect").value);
   if(b) $("resepBahanSatuan").value = b.satuan;
@@ -2012,6 +2036,7 @@ async function muatResepMenu(namaMenu){
     const data = await apiGet({ action: "getResepMenu", namaMenu });
     resepBahanCache = data.bahan || [];
     renderResepBahan();
+    renderResepHpp();
     renderResepKonversi();
   }catch(e){
     card.innerHTML = "";
@@ -2039,6 +2064,7 @@ function renderResepBahan(){
         await apiPost({ action: "hapusResepBahan", id });
         resepBahanCache = resepBahanCache.filter(b => b.id !== id);
         renderResepBahan();
+        renderResepHpp();
         renderResepKonversi();
       }catch(err){
         $("resepStatusMsg").textContent = "Gagal hapus: " + err.message;
@@ -2046,6 +2072,43 @@ function renderResepBahan(){
       }
     });
   });
+}
+// Estimasi HPP (Harga Pokok Penjualan) per Cup/Pcs: jumlah x harga per
+// unit, dijumlah semua bahan. Bahan Baku/Packaging pakai harga rata-rata
+// tertimbang dari Procurement; Bahan Turunan pakai Biaya per Unit dari tab
+// Bahan Turunan. Dihitung di client dari data yg sudah dimuat (tidak nambah
+// beban server), supaya langsung update tiap bahan ditambah/dihapus.
+function renderResepHpp(){
+  const wrap = $("resepHppCard");
+  if(!resepBahanCache.length){ wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  let total = 0;
+  let adaYangTidakDiketahui = false;
+  const baris = resepBahanCache.map(b => {
+    let hargaPerUnit = null;
+    if(b.tipeBahan === "Turunan"){
+      const bt = daftarBahanTurunanCache.find(x => x.nama === b.bahanBaku);
+      if(bt) hargaPerUnit = bt.biayaPerUnit;
+    }else{
+      const bb = daftarBahanBakuResepCache.find(x => x.jenis === b.bahanBaku);
+      if(bb) hargaPerUnit = bb.hargaPerUnit;
+    }
+    if(hargaPerUnit === null){
+      adaYangTidakDiketahui = true;
+      return `<div class="receipt-line"><span>${b.bahanBaku}</span><span class="val" style="color:var(--ink-soft);">harga tidak ditemukan</span></div>`;
+    }
+    const subtotal = hargaPerUnit * (b.jumlah || 0);
+    total += subtotal;
+    return `<div class="receipt-line"><span>${b.bahanBaku}</span><span class="val">${formatRupiah(subtotal)}</span></div>`;
+  }).join("");
+  wrap.innerHTML = `<p class="form-section-title" style="margin-top:0">Estimasi HPP per Cup/Pcs</p>` +
+    baris +
+    `<div class="receipt-line" style="border-top:1px solid var(--line); margin-top:4px; padding-top:6px;">
+      <span style="font-weight:700;">Total HPP</span><span class="val" style="font-weight:700;">${formatRupiah(total)}</span>
+    </div>` +
+    (adaYangTidakDiketahui
+      ? '<p class="empty-note" style="color:var(--danger); margin:6px 0 0;">Sebagian bahan belum punya histori harga di Procurement, HPP di atas belum lengkap.</p>'
+      : '');
 }
 function renderResepKonversi(){
   const wrap = $("resepKonversiCard");
@@ -2077,7 +2140,9 @@ $("resepTambahBahanBtn").addEventListener("click", async () => {
     $("resepBahanTurunanSelect").value = "";
     $("resepBahanJumlah").value = "";
     $("resepBahanSatuan").value = "";
+    $("resepBahanHargaInfo").textContent = "";
     renderResepBahan();
+    renderResepHpp();
     renderResepKonversi();
   }catch(err){
     $("resepStatusMsg").textContent = "Gagal simpan: " + err.message;
