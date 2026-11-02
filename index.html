@@ -219,6 +219,23 @@
   .bill-item .rp{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; font-weight:700; font-size:16px; color:var(--maroon-dark); }
   .bill-item .meta{ font-size:12px; color:var(--ink-soft); }
   .empty-note{ text-align:center; color:var(--ink-soft); font-size:13.5px; padding:30px 10px; }
+  .hint-note{ color:var(--ink-soft); font-size:11.5px; margin:4px 0 0; line-height:1.45; }
+  .hint-note.warn{ color:var(--danger); }
+  .resep-badge{
+    display:inline-block; font-size:10px; font-weight:700; padding:1px 6px; border-radius:6px;
+    margin-left:4px; vertical-align:middle; white-space:nowrap;
+  }
+  .resep-badge.turunan{ color:#fff; background:var(--gold); }
+  .resep-badge.ikut{ color:var(--ok); border:1px solid var(--ok); cursor:pointer; }
+  .resep-badge.tidak-ikut{ color:var(--ink-soft); border:1px solid var(--line); cursor:pointer; }
+  .resep-sub{ font-size:11.5px; color:var(--ink-soft); }
+  .resep-inherit{ color:var(--ink-soft); }
+  .resep-group-title{ font-size:11.5px; font-weight:700; color:var(--ink-soft); margin:8px 0 2px; }
+  .versi-chip{
+    display:inline-block; padding:6px 10px; margin:0 6px 6px 0; border-radius:16px;
+    border:1.5px solid var(--line); background:var(--paper); font-size:12.5px; cursor:pointer;
+  }
+  .versi-chip.active{ border-color:var(--maroon); color:var(--maroon-dark); font-weight:700; background:#fff; }
 
   /* Jenis product & menu management list */
   .list-manage-item{
@@ -647,21 +664,41 @@
   <section class="screen" id="resepScreen">
     <p class="form-section-title" style="margin-top:0">Detail Resep</p>
     <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">
-      Satu resep berlaku utk Jeda Owner &amp; Jeda Rider sekaligus (menu nama
-      sama = resep sama, tidak digandakan). Jumlah bahan selalu per 1 Cup
-      (Minuman) atau 1 Pcs (Cookies) — varian 500ml/1 Liter otomatis dikali
-      4x/8x, tidak perlu diisi terpisah.
+      Satu resep berlaku utk Jeda Owner &amp; Jeda Rider sekaligus. Jumlah bahan
+      per 1 unit menu itu (1 cup / 1 botol / 1 pcs). Menu varian (200ml, 500ml,
+      1 liter) cukup diinduk ke Resep Dasar — bahannya otomatis dikali pengali
+      ukuran, tinggal tambah packaging khusus varian (botol, stiker).
     </p>
     <div class="card">
       <label for="resepMenuSelect">Pilih Menu</label>
       <select id="resepMenuSelect"><option value="">— Pilih Menu —</option></select>
+      <label for="resepTanggalAcuan">Tanggal acuan</label>
+      <input type="date" id="resepTanggalAcuan">
+      <p class="hint-note">Resep, pengali &amp; HPP yang tampil = yang berlaku di tanggal ini.</p>
     </div>
 
     <div id="resepDetailWrap" style="display:none;">
+      <div class="card" id="resepDasarCard" style="display:none;">
+        <p class="form-section-title" style="margin-top:0">Resep Dasar</p>
+        <select id="resepDasarSelect"></select>
+        <p class="hint-note" id="resepDasarInfo"></p>
+        <button class="secondary" id="resepDasarSimpanBtn">Simpan Resep Dasar</button>
+      </div>
+
+      <div class="card" id="resepVersiCard">
+        <p class="form-section-title" style="margin-top:0">Versi Resep</p>
+        <div id="resepVersiList"></div>
+        <label for="resepVersiBaruTanggal">Buat versi baru, berlaku mulai</label>
+        <input type="date" id="resepVersiBaruTanggal">
+        <p class="hint-note">Isi versi yang sedang tampil akan disalin ke versi baru, lalu tinggal diubah. Versi lama tetap dipakai untuk tanggal sebelumnya.</p>
+        <button class="secondary" id="resepVersiBaruBtn">+ Buat Versi Baru</button>
+      </div>
+
       <div class="card" id="resepBahanListCard"></div>
 
       <div class="card">
         <p class="form-section-title" style="margin-top:0">Tambah Bahan</p>
+        <p class="hint-note" id="resepTambahTargetInfo" style="margin:0 0 6px;"></p>
         <label>Tipe Bahan</label>
         <div class="row2">
           <button type="button" class="pool-toggle-btn active" id="resepTipeBakuBtn">Bahan Baku</button>
@@ -670,7 +707,7 @@
         <div id="resepBakuWrap">
           <label for="resepBahanNama">Pilih Bahan Baku / Packaging</label>
           <select id="resepBahanNama"><option value="">— Pilih —</option></select>
-          <p class="empty-note" id="resepBahanHargaInfo" style="margin:4px 0 0;"></p>
+          <p class="hint-note" id="resepBahanHargaInfo"></p>
         </div>
         <div id="resepTurunanWrap" style="display:none;">
           <label for="resepBahanTurunanSelect">Pilih Bahan Turunan</label>
@@ -678,21 +715,58 @@
         </div>
         <div class="row2">
           <div>
-            <label for="resepBahanJumlah">Jumlah per Cup/Pcs</label>
+            <label for="resepBahanJumlah">Jumlah per unit</label>
             <input type="number" id="resepBahanJumlah" step="any" placeholder="0">
           </div>
           <div>
             <label for="resepBahanSatuan">Satuan (otomatis)</label>
-            <input type="text" id="resepBahanSatuan" readonly placeholder="— pilih bahan dulu —">
+            <input type="text" id="resepBahanSatuan" readonly placeholder="otomatis">
           </div>
         </div>
         <button class="primary" id="resepTambahBahanBtn" style="margin-top:10px;">+ Tambah Bahan</button>
       </div>
 
       <div class="card" id="resepHppCard" style="display:none;"></div>
-      <div class="card" id="resepKonversiCard" style="display:none;"></div>
     </div>
     <p class="status" id="resepStatusMsg"></p>
+
+    <p class="form-section-title">Konversi Ukuran (Cup Setara)</p>
+    <div class="card">
+      <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 8px;">
+        Dipakai untuk <b>komisi &amp; Jumlah Cup rider</b> (termasuk tier Bonus
+        Bulanan) <b>dan</b> pengali Resep Dasar ke menu varian. Untuk ganti
+        ukuran, tambah aturan baru dengan tanggal mulainya — penjualan sebelum
+        tanggal itu tetap pakai angka lama.
+      </p>
+      <div id="konversiUkuranList"></div>
+      <div class="row2">
+        <div>
+          <label for="konversiSub">Ukuran</label>
+          <select id="konversiSub">
+            <option value="Cup">Cup</option>
+            <option value="200 ml">200 ml</option>
+            <option value="500 ml">500 ml</option>
+            <option value="1 Liter">1 Liter</option>
+          </select>
+        </div>
+        <div>
+          <label for="konversiPengali">Pengali (× cup)</label>
+          <input type="number" id="konversiPengali" step="any" min="0" placeholder="mis. 7">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label for="konversiMulai">Berlaku mulai</label>
+          <input type="date" id="konversiMulai">
+        </div>
+        <div>
+          <label for="konversiKeterangan">Keterangan</label>
+          <input type="text" id="konversiKeterangan" placeholder="mis. cup 143 ml">
+        </div>
+      </div>
+      <button class="secondary" id="konversiTambahBtn">+ Tambah Aturan Konversi</button>
+      <p class="status" id="konversiStatusMsg"></p>
+    </div>
   </section>
 
   <!-- ===================== BAHAN TURUNAN ===================== -->
@@ -767,7 +841,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-01-resephpp-v23";
+const APP_VERSION = "2026-11-02-resepversi-v24";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1957,40 +2031,77 @@ function renderKaryawan(){
 }
 
 // ---------- Resep ----------
+// Resep per menu, ber-VERSI (Berlaku Mulai) & bisa menginduk ke Resep
+// Dasar. Semua hitungan (versi aktif, pengali ukuran, HPP) dikerjakan
+// server per "tanggal acuan", client tinggal menampilkan & kirim aksi,
+// lalu muat ulang -- spy angkanya selalu sama dgn yg dipakai server.
 let daftarMenuUnikCache = [];
 let daftarBahanTurunanCache = [];
 let daftarBahanBakuResepCache = []; // dari Procurement, disaring Kategori Bahan Baku/Packaging, harga weighted avg
-let resepMenuAktif = null; // {namaMenu, kategori}
-let resepBahanCache = [];
+let konversiTabelCache = [];
+let resepMenuAktif = null; // {namaMenu, kategori, subKategori, resepDasar}
+let resepData = null;      // respons getResepMenu terakhir
+
+function hariIniStr(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function fmtTglResep(s){
+  if(!s) return "sejak awal";
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+}
+// Harga per unit bisa pecahan kecil (mis. Rp0,45/gr) -- jangan dibulatkan ke Rp0.
+function formatRupiahDetail(n){
+  const v = Number(n) || 0;
+  if(Math.abs(v) >= 100) return formatRupiah(v);
+  return "Rp" + v.toLocaleString("id-ID", { maximumFractionDigits: 2 });
+}
+function fmtAngka(n){ return (Number(n) || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 }); }
+function escHtml(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function setResepStatus(msg, cls){
+  $("resepStatusMsg").textContent = msg || "";
+  $("resepStatusMsg").className = "status" + (cls ? " " + cls : "");
+}
+
+async function muatDaftarMenuResep(){
+  const data = await apiGet({ action: "getDaftarMenuUnik" });
+  daftarMenuUnikCache = data.daftarMenu || [];
+  konversiTabelCache = data.konversiTabel || [];
+  const pilihan = $("resepMenuSelect").value;
+  $("resepMenuSelect").innerHTML = '<option value="">— Pilih Menu —</option>' +
+    daftarMenuUnikCache.map(m => `<option value="${escHtml(m.namaMenu)}">${escHtml(m.namaMenu)} (${escHtml(m.kategori)}${m.resepDasar ? " · induk: " + escHtml(m.resepDasar) : ""})</option>`).join("");
+  if(pilihan) $("resepMenuSelect").value = pilihan;
+  renderKonversiUkuran();
+}
 
 async function loadResepTab(){
-  if(!daftarMenuUnikCache.length){
-    try{
-      const data = await apiGet({ action: "getDaftarMenuUnik" });
-      daftarMenuUnikCache = data.daftarMenu || [];
-      $("resepMenuSelect").innerHTML = '<option value="">— Pilih Menu —</option>' +
-        daftarMenuUnikCache.map(m => `<option value="${m.namaMenu}">${m.namaMenu} (${m.kategori})</option>`).join("");
-    }catch(e){
-      $("resepStatusMsg").textContent = "Gagal memuat daftar menu: " + e.message;
-      $("resepStatusMsg").className = "status err";
-    }
+  if(!$("resepTanggalAcuan").value) $("resepTanggalAcuan").value = hariIniStr();
+  if(!$("konversiMulai").value) $("konversiMulai").value = hariIniStr();
+  try{
+    await muatDaftarMenuResep();
+  }catch(e){
+    setResepStatus("Gagal memuat daftar menu: " + e.message, "err");
   }
   try{
     const dataBb = await apiGet({ action: "getBahanBakuResep" });
     daftarBahanBakuResepCache = dataBb.bahanBaku || [];
     $("resepBahanNama").innerHTML = '<option value="">— Pilih —</option>' +
-      daftarBahanBakuResepCache.map(b => `<option value="${b.jenis}">${b.jenis} (${formatRupiah(b.hargaPerUnit)}/${b.satuan})</option>`).join("");
+      daftarBahanBakuResepCache.map(b => `<option value="${escHtml(b.jenis)}">${escHtml(b.jenis)} (${formatRupiahDetail(b.hargaPerUnit)}/${escHtml(b.satuan)})</option>`).join("");
   }catch(e){
-    $("resepStatusMsg").textContent = "Gagal memuat daftar bahan baku dari Procurement: " + e.message;
-    $("resepStatusMsg").className = "status err";
+    setResepStatus("Gagal memuat daftar bahan baku dari Procurement: " + e.message, "err");
   }
   try{
     const dataBt = await apiGet({ action: "getDaftarBahanTurunan" });
     daftarBahanTurunanCache = dataBt.daftar || [];
     $("resepBahanTurunanSelect").innerHTML = '<option value="">— Pilih —</option>' +
-      daftarBahanTurunanCache.map(b => `<option value="${b.nama}">${b.nama} (${formatRupiah(b.biayaPerUnit)}/${b.satuan})</option>`).join("");
+      daftarBahanTurunanCache.map(b => `<option value="${escHtml(b.nama)}">${escHtml(b.nama)} (${formatRupiahDetail(b.biayaPerUnit)}/${escHtml(b.satuan)})</option>`).join("");
   }catch(e){ /* diam, tidak fatal */ }
+  if(resepMenuAktif) await muatResepMenu(resepMenuAktif.namaMenu);
 }
+
 let resepTipeBahanAktif = "Baku";
 $("resepTipeBakuBtn").addEventListener("click", () => setResepTipeBahan("Baku"));
 $("resepTipeTurunanBtn").addEventListener("click", () => setResepTipeBahan("Turunan"));
@@ -2011,7 +2122,7 @@ $("resepBahanNama").addEventListener("change", () => {
   if(b){
     $("resepBahanSatuan").value = b.satuan;
     $("resepBahanHargaInfo").textContent =
-      `Harga rata-rata tertimbang: ${formatRupiah(b.hargaPerUnit)} / ${b.satuan} (dari ${b.jumlahTransaksi} transaksi Procurement)`;
+      `${b.kategoriProduct} · harga rata-rata tertimbang ${formatRupiahDetail(b.hargaPerUnit)} / ${b.satuan} (dari ${b.jumlahTransaksi} transaksi Procurement)`;
   }else{
     $("resepBahanSatuan").value = "";
     $("resepBahanHargaInfo").textContent = "";
@@ -2019,42 +2130,192 @@ $("resepBahanNama").addEventListener("change", () => {
 });
 $("resepBahanTurunanSelect").addEventListener("change", () => {
   const b = daftarBahanTurunanCache.find(x => x.nama === $("resepBahanTurunanSelect").value);
-  if(b) $("resepBahanSatuan").value = b.satuan;
+  $("resepBahanSatuan").value = b ? b.satuan : "";
 });
+
 $("resepMenuSelect").addEventListener("change", async () => {
   const nama = $("resepMenuSelect").value;
-  if(!nama){ $("resepDetailWrap").style.display = "none"; return; }
-  resepMenuAktif = daftarMenuUnikCache.find(m => m.namaMenu === nama);
+  if(!nama){ resepMenuAktif = null; resepData = null; $("resepDetailWrap").style.display = "none"; return; }
+  resepMenuAktif = daftarMenuUnikCache.find(m => m.namaMenu === nama) || { namaMenu: nama, kategori: "", subKategori: "", resepDasar: "" };
   $("resepDetailWrap").style.display = "block";
   await muatResepMenu(nama);
 });
+$("resepTanggalAcuan").addEventListener("change", async () => {
+  if(resepMenuAktif) await muatResepMenu(resepMenuAktif.namaMenu);
+});
+
 async function muatResepMenu(namaMenu){
-  const card = $("resepBahanListCard");
-  card.innerHTML = '<p class="empty-note">Memuat...</p>';
-  $("resepStatusMsg").textContent = "";
+  $("resepBahanListCard").innerHTML = '<p class="empty-note">Memuat...</p>';
+  setResepStatus("");
   try{
-    const data = await apiGet({ action: "getResepMenu", namaMenu });
-    resepBahanCache = data.bahan || [];
+    const tanggal = $("resepTanggalAcuan").value || hariIniStr();
+    resepData = await apiGet({ action: "getResepMenu", namaMenu, tanggal });
+    if(resepData.konversiTabel){ konversiTabelCache = resepData.konversiTabel; renderKonversiUkuran(); }
+    renderResepDasar();
+    renderResepVersi();
     renderResepBahan();
     renderResepHpp();
-    renderResepKonversi();
   }catch(e){
-    card.innerHTML = "";
-    $("resepStatusMsg").textContent = "Gagal memuat resep: " + e.message;
-    $("resepStatusMsg").className = "status err";
+    $("resepBahanListCard").innerHTML = "";
+    setResepStatus("Gagal memuat resep: " + e.message, "err");
   }
 }
-function renderResepBahan(){
-  const card = $("resepBahanListCard");
-  if(!resepBahanCache.length){
-    card.innerHTML = '<p class="empty-note">Belum ada bahan baku utk menu ini.</p>';
+
+// Menu ini boleh punya Resep Dasar kalau Minuman ukuran selain Cup (atau
+// memang sudah terlanjur diinduk). Menu yg dipakai sbg induk oleh menu
+// lain tidak bisa sekaligus jadi varian.
+function bolehPunyaResepDasar(){
+  if(!resepData) return false;
+  if(resepData.resepDasar) return true;
+  return resepData.kategori === "Minuman" && resepData.subKategori && resepData.subKategori !== "Cup" && !resepData.varianTurunan.length;
+}
+function renderResepDasar(){
+  const card = $("resepDasarCard");
+  if(!bolehPunyaResepDasar()){ card.style.display = "none"; return; }
+  card.style.display = "block";
+  const kandidat = daftarMenuUnikCache.filter(m =>
+    m.namaMenu !== resepData.namaMenu && m.kategori === resepData.kategori && !m.resepDasar);
+  const terpilih = resepData.resepDasar || resepData.saranResepDasar || "";
+  $("resepDasarSelect").innerHTML = '<option value="">— Resep mandiri (tidak menginduk) —</option>' +
+    kandidat.map(m => `<option value="${escHtml(m.namaMenu)}">${escHtml(m.namaMenu)}${!resepData.resepDasar && m.namaMenu === resepData.saranResepDasar ? " (saran)" : ""}</option>`).join("");
+  $("resepDasarSelect").value = terpilih;
+  let info;
+  if(resepData.resepDasar){
+    info = resepData.pengali !== null
+      ? `Menginduk ke ${resepData.resepDasar}: bahan dasarnya dikali ×${fmtAngka(resepData.pengali)} (ukuran ${resepData.subKategori} di ${fmtTglResep(resepData.tanggal)}).`
+      : (resepData.catatanDasar || "");
+  }else if(resepData.saranResepDasar){
+    info = `Belum menginduk. Saran: ${resepData.saranResepDasar} — tekan Simpan untuk memakainya.`;
+  }else{
+    info = "Belum menginduk ke Resep Dasar.";
+  }
+  $("resepDasarInfo").textContent = info;
+}
+$("resepDasarSimpanBtn").addEventListener("click", async () => {
+  if(!resepMenuAktif) return;
+  const resepDasar = $("resepDasarSelect").value;
+  $("resepDasarSimpanBtn").disabled = true;
+  try{
+    await apiPost({ action: "setResepDasar", namaMenu: resepMenuAktif.namaMenu, resepDasar });
+    await muatDaftarMenuResep();
+    await muatResepMenu(resepMenuAktif.namaMenu);
+    setResepStatus("Resep Dasar tersimpan ✓", "ok");
+  }catch(err){
+    setResepStatus("Gagal simpan Resep Dasar: " + err.message, "err");
+  }finally{
+    $("resepDasarSimpanBtn").disabled = false;
+  }
+});
+
+function renderResepVersi(){
+  const list = $("resepVersiList");
+  const versiList = resepData.versiList || [];
+  if(!versiList.length){
+    list.innerHTML = '<p class="hint-note" style="margin:0 0 6px;">Menu ini belum punya bahan sendiri. Bahan yang ditambah akan masuk versi "sejak awal".</p>';
+  }else{
+    list.innerHTML = versiList.map(v => {
+      const label = v ? "mulai " + fmtTglResep(v) : "sejak awal";
+      return `<span class="versi-chip${v === resepData.versiAktif ? " active" : ""}" data-v="${v}">${label}</span>`;
+    }).join("") +
+      (resepData.versiAktif !== null
+        ? `<p class="hint-note" style="margin:2px 0 0;">Tampil: versi ${resepData.versiAktif ? "mulai " + fmtTglResep(resepData.versiAktif) : "sejak awal"} (berlaku di tanggal acuan). Ketuk versi lain untuk melihatnya. <a href="#" id="resepHapusVersiBtn" style="color:var(--danger);">Hapus versi ini</a></p>`
+        : `<p class="hint-note warn" style="margin:2px 0 0;">Belum ada versi yang berlaku di tanggal acuan ini.</p>`);
+    list.querySelectorAll(".versi-chip").forEach(chip => {
+      chip.addEventListener("click", async () => {
+        // Lihat versi lain = pindahkan tanggal acuan ke awal versi itu
+        // (versi "sejak awal" -> hari sebelum versi berikutnya mulai).
+        const v = chip.dataset.v;
+        let tgl = v;
+        if(!v){
+          const berikut = versiList.filter(x => x).sort()[0];
+          if(berikut){
+            const [y, m, d] = berikut.split("-").map(Number);
+            const kemarin = new Date(y, m - 1, d - 1);
+            tgl = kemarin.getFullYear() + "-" + String(kemarin.getMonth() + 1).padStart(2, "0") + "-" + String(kemarin.getDate()).padStart(2, "0");
+          }else{
+            tgl = hariIniStr();
+          }
+        }
+        $("resepTanggalAcuan").value = tgl;
+        await muatResepMenu(resepMenuAktif.namaMenu);
+      });
+    });
+    const hapusBtn = $("resepHapusVersiBtn");
+    if(hapusBtn) hapusBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const v = resepData.versiAktif;
+      const label = v ? "mulai " + fmtTglResep(v) : "sejak awal";
+      if(!confirm(`Hapus SEMUA bahan versi ${label} untuk ${resepData.namaMenu}? Tidak bisa dibatalkan.`)) return;
+      try{
+        await apiPost({ action: "hapusVersiResep", namaMenu: resepData.namaMenu, berlakuMulai: v || "" });
+        await muatResepMenu(resepMenuAktif.namaMenu);
+        setResepStatus("Versi dihapus ✓", "ok");
+      }catch(err){
+        setResepStatus("Gagal hapus versi: " + err.message, "err");
+      }
+    });
+  }
+  const versiTarget = resepData.versiAktif;
+  $("resepTambahTargetInfo").textContent = "Bahan akan masuk ke versi: " +
+    (versiTarget ? "mulai " + fmtTglResep(versiTarget) : "sejak awal") + ".";
+}
+$("resepVersiBaruBtn").addEventListener("click", async () => {
+  if(!resepMenuAktif || !resepData) return;
+  const mulaiBaru = $("resepVersiBaruTanggal").value;
+  if(!mulaiBaru){ setResepStatus("Isi dulu tanggal mulai versi baru.", "err"); return; }
+  if(resepData.versiAktif === null || !(resepData.bahan || []).length){
+    setResepStatus("Versi yang sedang tampil masih kosong, tidak ada yang bisa disalin. Pilih tanggal acuan yang ada resepnya dulu.", "err");
     return;
   }
-  card.innerHTML = resepBahanCache.map(b => `
-    <div class="receipt-line" data-id="${b.id}">
-      <span>${b.bahanBaku}${b.tipeBahan === "Turunan" ? ' <span style="font-size:10px; font-weight:700; color:#fff; background:var(--gold); padding:1px 6px; border-radius:6px;">TURUNAN</span>' : ''}</span>
-      <span class="val">${b.jumlah} ${b.satuan} <a href="#" class="hapusBahanBtn" style="color:var(--danger); margin-left:6px;">✕</a></span>
-    </div>`).join("");
+  $("resepVersiBaruBtn").disabled = true;
+  try{
+    const res = await apiPost({
+      action: "buatVersiResep", namaMenu: resepMenuAktif.namaMenu,
+      dariMulai: resepData.versiAktif || "", mulaiBaru
+    });
+    $("resepTanggalAcuan").value = mulaiBaru; // langsung tampilkan versi baru utk diedit
+    $("resepVersiBaruTanggal").value = "";
+    await muatResepMenu(resepMenuAktif.namaMenu);
+    setResepStatus(`Versi baru mulai ${fmtTglResep(mulaiBaru)} dibuat (${res.jumlahDisalin} bahan disalin) — silakan ubah bahannya.`, "ok");
+  }catch(err){
+    setResepStatus("Gagal buat versi: " + err.message, "err");
+  }finally{
+    $("resepVersiBaruBtn").disabled = false;
+  }
+});
+
+function renderResepBahan(){
+  const card = $("resepBahanListCard");
+  const bahan = resepData.bahan || [];
+  const bahanDasar = resepData.bahanDasar || [];
+  // Badge "ikut varian" cuma relevan kalau menu ini bisa jadi Resep Dasar
+  // (Minuman yg tidak menginduk ke resep lain).
+  const tampilkanIkut = resepData.kategori === "Minuman" && !resepData.resepDasar;
+  let html = "";
+  if(resepData.resepDasar){
+    html += `<p class="resep-group-title">Dari Resep Dasar: ${escHtml(resepData.resepDasar)}${resepData.pengali !== null ? " × " + fmtAngka(resepData.pengali) : ""}${resepData.versiDasarAktif ? " (versi mulai " + fmtTglResep(resepData.versiDasarAktif) + ")" : ""}</p>`;
+    html += bahanDasar.length
+      ? bahanDasar.map(b => `
+        <div class="receipt-line resep-inherit">
+          <span>${escHtml(b.bahanBaku)}${b.tipeBahan === "Turunan" ? '<span class="resep-badge turunan">TURUNAN</span>' : ""}</span>
+          <span class="val">${fmtAngka(b.jumlah)} ${escHtml(b.satuan)}</span>
+        </div>`).join("")
+      : `<p class="hint-note warn" style="margin:0 0 6px;">${escHtml(resepData.catatanDasar || "Tidak ada bahan dasar yang ikut ke varian.")}</p>`;
+    html += `<p class="resep-group-title">Bahan khusus menu ini</p>`;
+  }
+  html += bahan.length
+    ? bahan.map(b => `
+      <div class="receipt-line" data-id="${escHtml(b.id)}">
+        <span>${escHtml(b.bahanBaku)}${b.tipeBahan === "Turunan" ? '<span class="resep-badge turunan">TURUNAN</span>' : ""}${tampilkanIkut
+          ? `<span class="resep-badge ${b.ikutKeVarian === "Ya" ? "ikut" : "tidak-ikut"} toggleIkutBtn" data-nilai="${b.ikutKeVarian === "Ya" ? "Tidak" : "Ya"}">${b.ikutKeVarian === "Ya" ? "ikut varian" : "tidak ikut varian"}</span>` : ""}</span>
+        <span class="val">${fmtAngka(b.jumlah)} ${escHtml(b.satuan)} <a href="#" class="hapusBahanBtn" style="color:var(--danger); margin-left:6px;">✕</a></span>
+      </div>`).join("")
+    : '<p class="hint-note" style="margin:0 0 6px;">Belum ada bahan di versi ini.</p>';
+  if(tampilkanIkut && bahan.length){
+    html += '<p class="hint-note">Ketuk label "ikut varian" untuk mengubah. Bahan yang ikut varian otomatis dikali pengali di menu 200ml/500ml/1 liter yang menginduk ke sini; packaging (cup, tutup, sedotan) biasanya tidak ikut.</p>';
+  }
+  card.innerHTML = html;
+
   card.querySelectorAll(".hapusBahanBtn").forEach(a => {
     a.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -2062,93 +2323,170 @@ function renderResepBahan(){
       a.textContent = "…";
       try{
         await apiPost({ action: "hapusResepBahan", id });
-        resepBahanCache = resepBahanCache.filter(b => b.id !== id);
-        renderResepBahan();
-        renderResepHpp();
-        renderResepKonversi();
+        await muatResepMenu(resepMenuAktif.namaMenu);
       }catch(err){
-        $("resepStatusMsg").textContent = "Gagal hapus: " + err.message;
-        $("resepStatusMsg").className = "status err";
+        setResepStatus("Gagal hapus: " + err.message, "err");
+      }
+    });
+  });
+  card.querySelectorAll(".toggleIkutBtn").forEach(badge => {
+    badge.addEventListener("click", async () => {
+      const id = badge.closest(".receipt-line").dataset.id;
+      badge.textContent = "…";
+      try{
+        await apiPost({ action: "setIkutKeVarian", id, nilai: badge.dataset.nilai });
+        await muatResepMenu(resepMenuAktif.namaMenu);
+      }catch(err){
+        setResepStatus("Gagal ubah: " + err.message, "err");
       }
     });
   });
 }
-// Estimasi HPP (Harga Pokok Penjualan) per Cup/Pcs: jumlah x harga per
-// unit, dijumlah semua bahan. Bahan Baku/Packaging pakai harga rata-rata
-// tertimbang dari Procurement; Bahan Turunan pakai Biaya per Unit dari tab
-// Bahan Turunan. Dihitung di client dari data yg sudah dimuat (tidak nambah
-// beban server), supaya langsung update tiap bahan ditambah/dihapus.
+
+// Estimasi HPP per 1 unit menu di tanggal acuan: jumlah x harga per unit,
+// dijumlah semua bahan (bahan dasar yg sudah dikali pengali + bahan khusus
+// menu ini). Harga Bahan Baku/Packaging = rata-rata tertimbang Procurement;
+// Bahan Turunan = Biaya per Unit dari tab Bahan Turunan.
 function renderResepHpp(){
   const wrap = $("resepHppCard");
-  if(!resepBahanCache.length){ wrap.style.display = "none"; return; }
+  const semua = [...(resepData.bahanDasar || []), ...(resepData.bahan || [])];
+  if(!semua.length && !(resepData.varianTurunan || []).length){ wrap.style.display = "none"; return; }
   wrap.style.display = "block";
-  let total = 0;
-  let adaYangTidakDiketahui = false;
-  const baris = resepBahanCache.map(b => {
-    let hargaPerUnit = null;
-    if(b.tipeBahan === "Turunan"){
-      const bt = daftarBahanTurunanCache.find(x => x.nama === b.bahanBaku);
-      if(bt) hargaPerUnit = bt.biayaPerUnit;
-    }else{
-      const bb = daftarBahanBakuResepCache.find(x => x.jenis === b.bahanBaku);
-      if(bb) hargaPerUnit = bb.hargaPerUnit;
-    }
-    if(hargaPerUnit === null){
-      adaYangTidakDiketahui = true;
-      return `<div class="receipt-line"><span>${b.bahanBaku}</span><span class="val" style="color:var(--ink-soft);">harga tidak ditemukan</span></div>`;
-    }
-    const subtotal = hargaPerUnit * (b.jumlah || 0);
-    total += subtotal;
-    return `<div class="receipt-line"><span>${b.bahanBaku}</span><span class="val">${formatRupiah(subtotal)}</span></div>`;
-  }).join("");
-  wrap.innerHTML = `<p class="form-section-title" style="margin-top:0">Estimasi HPP per Cup/Pcs</p>` +
-    baris +
+  function baris(b, dariDasar){
+    const nilai = b.subtotal === null
+      ? `<span class="val" style="color:var(--danger); font-size:12px;">${escHtml(b.catatan || "harga tidak ditemukan")}</span>`
+      : `<span class="val">${formatRupiah(b.subtotal)}</span>`;
+    const rincian = b.hargaPerUnit !== null
+      ? `<div class="resep-sub">${fmtAngka(b.jumlah)} ${escHtml(b.satuan)} × ${formatRupiahDetail(b.hargaPerUnit)}${dariDasar ? " · dari Resep Dasar" : ""}</div>` : "";
+    return `<div class="receipt-line"><span>${escHtml(b.bahanBaku)}${rincian}</span>${nilai}</div>`;
+  }
+  const unit = resepData.kategori === "Cookies" ? "Pcs" : (resepData.subKategori && resepData.subKategori !== "Cup" ? resepData.subKategori : "Cup");
+  let html = `<p class="form-section-title" style="margin-top:0">Estimasi HPP per ${escHtml(unit)} · ${fmtTglResep(resepData.tanggal)}</p>` +
+    (resepData.bahanDasar || []).map(b => baris(b, true)).join("") +
+    (resepData.bahan || []).map(b => baris(b, false)).join("") +
     `<div class="receipt-line" style="border-top:1px solid var(--line); margin-top:4px; padding-top:6px;">
-      <span style="font-weight:700;">Total HPP</span><span class="val" style="font-weight:700;">${formatRupiah(total)}</span>
-    </div>` +
-    (adaYangTidakDiketahui
-      ? '<p class="empty-note" style="color:var(--danger); margin:6px 0 0;">Sebagian bahan belum punya histori harga di Procurement, HPP di atas belum lengkap.</p>'
-      : '');
-}
-function renderResepKonversi(){
-  const wrap = $("resepKonversiCard");
-  if(!resepMenuAktif || resepMenuAktif.kategori !== "Minuman" || !resepBahanCache.length){
-    wrap.style.display = "none";
-    return;
+      <span style="font-weight:700;">Total HPP</span><span class="val" style="font-weight:700;">${formatRupiah(resepData.hppTotal)}</span>
+    </div>`;
+  if(resepData.adaHargaKosong){
+    html += '<p class="hint-note warn">Sebagian bahan belum bisa dihitung harganya (lihat keterangan merah), jadi HPP di atas belum lengkap. Bahan lama yang namanya tidak cocok dengan Jenis di Procurement: hapus lalu tambah ulang lewat dropdown.</p>';
   }
-  wrap.style.display = "block";
-  function baris(label, kali){
-    return `<div class="receipt-line"><span style="font-weight:700;">${label}</span><span></span></div>` +
-      resepBahanCache.map(b => `<div class="receipt-line"><span>${b.bahanBaku}</span><span class="val">${(b.jumlah * kali).toLocaleString("id-ID")} ${b.satuan}</span></div>`).join("");
+  if((resepData.varianTurunan || []).length){
+    html += `<p class="resep-group-title" style="margin-top:12px;">Menu varian yang memakai resep ini</p>` +
+      resepData.varianTurunan.map(v => `
+        <div class="receipt-line">
+          <span>${escHtml(v.namaMenu)}<div class="resep-sub">${escHtml(v.subKategori || "-")}${v.pengali !== null ? " · ×" + fmtAngka(v.pengali) : ""}</div></span>
+          <span class="val">${formatRupiah(v.hppTotal)}${v.adaHargaKosong ? ' <span style="color:var(--danger);">*</span>' : ""}</span>
+        </div>`).join("");
   }
-  wrap.innerHTML = `<p class="form-section-title" style="margin-top:0">Konversi Ukuran</p>` +
-    baris("Per Cup (x1)", 1) + baris("Per 500ml (x4)", 4) + baris("Per 1 Liter (x8)", 8);
+  wrap.innerHTML = html;
 }
+
 $("resepTambahBahanBtn").addEventListener("click", async () => {
-  const bahanBaku = resepTipeBahanAktif === "Turunan" ? $("resepBahanTurunanSelect").value : $("resepBahanNama").value.trim();
+  const bahanBaku = resepTipeBahanAktif === "Turunan" ? $("resepBahanTurunanSelect").value : $("resepBahanNama").value;
   const jumlah = parseFloat($("resepBahanJumlah").value) || 0;
   const satuan = $("resepBahanSatuan").value;
-  if(!bahanBaku || !jumlah || !satuan || !resepMenuAktif) return;
+  if(!resepMenuAktif || !resepData) return;
+  if(!bahanBaku || !jumlah || !satuan){ setResepStatus("Pilih bahan & isi jumlahnya dulu.", "err"); return; }
+  // Default "ikut ke varian": Packaging tidak ikut (dihitung per unit, bukan
+  // per volume), bahan lain ikut. Bisa diubah lewat label di daftar bahan.
+  let ikutKeVarian = "Ya";
+  if(resepTipeBahanAktif === "Baku"){
+    const b = daftarBahanBakuResepCache.find(x => x.jenis === bahanBaku);
+    if(b && b.kategoriProduct === "Packaging") ikutKeVarian = "Tidak";
+  }
   $("resepTambahBahanBtn").disabled = true;
   try{
-    const res = await apiPost({
+    await apiPost({
       action: "tambahResepBahan", namaMenu: resepMenuAktif.namaMenu,
-      kategori: resepMenuAktif.kategori, bahanBaku, jumlah, satuan, tipeBahan: resepTipeBahanAktif
+      kategori: resepData.kategori || resepMenuAktif.kategori, bahanBaku, jumlah, satuan,
+      tipeBahan: resepTipeBahanAktif, berlakuMulai: resepData.versiAktif || "", ikutKeVarian
     });
-    resepBahanCache.push({ id: res.id, bahanBaku, jumlah, satuan, tipeBahan: resepTipeBahanAktif });
     $("resepBahanNama").value = "";
     $("resepBahanTurunanSelect").value = "";
     $("resepBahanJumlah").value = "";
     $("resepBahanSatuan").value = "";
     $("resepBahanHargaInfo").textContent = "";
-    renderResepBahan();
-    renderResepHpp();
-    renderResepKonversi();
+    await muatResepMenu(resepMenuAktif.namaMenu);
+    setResepStatus(`${bahanBaku} ditambahkan ✓`, "ok");
   }catch(err){
-    $("resepStatusMsg").textContent = "Gagal simpan: " + err.message;
-    $("resepStatusMsg").className = "status err";
+    setResepStatus("Gagal simpan: " + err.message, "err");
   }finally{
     $("resepTambahBahanBtn").disabled = false;
+  }
+});
+
+// ---------- Konversi Ukuran (Cup Setara) ----------
+function renderKonversiUkuran(){
+  const wrap = $("konversiUkuranList");
+  if(!konversiTabelCache.length){
+    wrap.innerHTML = '<p class="hint-note" style="margin:0 0 6px;">Belum ada data (jalankan setupSheets() sekali setelah update Code.gs).</p>';
+    return;
+  }
+  const hariIni = hariIniStr();
+  const urutan = ["Cup", "200 ml", "500 ml", "1 Liter"];
+  const subs = [...new Set(konversiTabelCache.map(r => r.subKategori))]
+    .sort((a, b) => (urutan.indexOf(a) + 1 || 99) - (urutan.indexOf(b) + 1 || 99));
+  wrap.innerHTML = subs.map(sub => {
+    const rows = konversiTabelCache.filter(r => r.subKategori === sub)
+      .sort((a, b) => (a.berlakuMulai || "").localeCompare(b.berlakuMulai || ""));
+    // aktif hari ini = berlaku mulai terbaru yg <= hari ini
+    let aktifId = null;
+    rows.forEach(r => { if(!r.berlakuMulai || r.berlakuMulai <= hariIni) aktifId = r.id; });
+    return `<p class="resep-group-title">${escHtml(sub)}</p>` + rows.map(r => `
+      <div class="receipt-line" data-id="${escHtml(r.id)}">
+        <span>×${fmtAngka(r.pengali)}${r.id === aktifId ? '<span class="resep-badge ikut">berlaku hari ini</span>' : ""}
+          <div class="resep-sub">${r.berlakuMulai ? "mulai " + fmtTglResep(r.berlakuMulai) : "sejak awal"}${r.keterangan ? " · " + escHtml(r.keterangan) : ""}</div></span>
+        <span class="val">${r.berlakuMulai ? '<a href="#" class="hapusKonversiBtn" style="color:var(--danger);">✕</a>' : ""}</span>
+      </div>`).join("");
+  }).join("");
+  wrap.querySelectorAll(".hapusKonversiBtn").forEach(a => {
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if(!confirm("Hapus aturan konversi ini? Komisi rider untuk penjualan baru akan kembali memakai aturan sebelumnya.")) return;
+      const id = a.closest(".receipt-line").dataset.id;
+      a.textContent = "…";
+      try{
+        await apiPost({ action: "hapusKonversiUkuran", id });
+        await muatDaftarMenuResep();
+        if(resepMenuAktif) await muatResepMenu(resepMenuAktif.namaMenu);
+        $("konversiStatusMsg").textContent = "Aturan dihapus ✓";
+        $("konversiStatusMsg").className = "status ok";
+      }catch(err){
+        $("konversiStatusMsg").textContent = "Gagal hapus: " + err.message;
+        $("konversiStatusMsg").className = "status err";
+      }
+    });
+  });
+}
+$("konversiTambahBtn").addEventListener("click", async () => {
+  const subKategori = $("konversiSub").value;
+  const pengali = parseFloat($("konversiPengali").value);
+  const berlakuMulai = $("konversiMulai").value;
+  const keterangan = $("konversiKeterangan").value.trim();
+  if(!(pengali > 0) || !berlakuMulai){
+    $("konversiStatusMsg").textContent = "Isi pengali dan tanggal berlaku mulai.";
+    $("konversiStatusMsg").className = "status err";
+    return;
+  }
+  let pesan = `Mulai ${fmtTglResep(berlakuMulai)}, 1 ${subKategori} dihitung ${fmtAngka(pengali)} cup setara untuk komisi & bonus rider, dan pengali resep varian. Lanjut?`;
+  if(berlakuMulai < hariIniStr()){
+    pesan += "\n\nTanggal ini sudah lewat: penjualan yang SUDAH tersimpan tidak dihitung ulang otomatis — hanya kalau direvisi lewat Jeda Admin / Panel Owner.";
+  }
+  if(!confirm(pesan)) return;
+  $("konversiTambahBtn").disabled = true;
+  try{
+    await apiPost({ action: "tambahKonversiUkuran", subKategori, pengali, berlakuMulai, keterangan });
+    $("konversiPengali").value = "";
+    $("konversiKeterangan").value = "";
+    await muatDaftarMenuResep();
+    if(resepMenuAktif) await muatResepMenu(resepMenuAktif.namaMenu);
+    $("konversiStatusMsg").textContent = "Aturan konversi tersimpan ✓";
+    $("konversiStatusMsg").className = "status ok";
+  }catch(err){
+    $("konversiStatusMsg").textContent = "Gagal simpan: " + err.message;
+    $("konversiStatusMsg").className = "status err";
+  }finally{
+    $("konversiTambahBtn").disabled = false;
   }
 });
 
