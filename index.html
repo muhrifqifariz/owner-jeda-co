@@ -235,6 +235,13 @@
     display:inline-block; padding:6px 10px; margin:0 6px 6px 0; border-radius:16px;
     border:1.5px solid var(--line); background:var(--paper); font-size:12.5px; cursor:pointer;
   }
+  .tren-table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px; }
+  .tren-table th{ font-weight:600; color:var(--ink-soft); text-align:right; padding:4px 2px; font-size:11px; }
+  .tren-table th:first-child, .tren-table td:first-child{ text-align:left; }
+  .tren-table td{ text-align:right; padding:6px 2px; border-top:1px solid var(--line); white-space:nowrap; }
+  .tren-table tr.ytd td{ font-weight:700; border-top:1.5px solid var(--ink-soft); }
+  .tren-naik{ color:var(--danger); font-size:10.5px; }
+  .tren-turun{ color:var(--ok); font-size:10.5px; }
   .versi-chip.active{ border-color:var(--maroon); color:var(--maroon-dark); font-weight:700; background:#fff; }
 
   /* Jenis product & menu management list */
@@ -727,6 +734,7 @@
       </div>
 
       <div class="card" id="resepHppCard" style="display:none;"></div>
+      <div class="card" id="resepTrenCard" style="display:none;"></div>
     </div>
     <p class="status" id="resepStatusMsg"></p>
 
@@ -841,7 +849,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-05-btjenis-v29";
+const APP_VERSION = "2026-11-05-hppperiode-v33";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -2058,6 +2066,11 @@ function formatRupiahDetail(n){
   return "Rp" + v.toLocaleString("id-ID", { maximumSignificantDigits: 3 });
 }
 function fmtAngka(n){ return (Number(n) || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 }); }
+function bulanPendek(key){
+  if(!key) return "";
+  const [y, m] = String(key).split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "short" }) + (String(key).slice(0, 4) !== String(new Date().getFullYear()) ? " " + y : "");
+}
 function fmtGpm(g){ return g === null || g === undefined ? "-" : (g * 100).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; }
 function escHtml(s){
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -2136,7 +2149,7 @@ $("resepBahanTurunanSelect").addEventListener("change", () => {
 
 $("resepMenuSelect").addEventListener("change", async () => {
   const nama = $("resepMenuSelect").value;
-  if(!nama){ resepMenuAktif = null; resepData = null; $("resepDetailWrap").style.display = "none"; return; }
+  if(!nama){ resepMenuAktif = null; resepData = null; trenHppToken++; $("resepDetailWrap").style.display = "none"; return; }
   resepMenuAktif = daftarMenuUnikCache.find(m => m.namaMenu === nama) || { namaMenu: nama, kategori: "", subKategori: "", resepDasar: "" };
   $("resepDetailWrap").style.display = "block";
   await muatResepMenu(nama);
@@ -2159,6 +2172,7 @@ async function muatResepMenu(namaMenu){
     renderResepVersi();
     renderResepBahan();
     renderResepHpp();
+    muatTrenHpp(namaMenu); // tidak ditunggu, spy kartu utama tampil duluan
   }catch(e){
     $("resepBahanListCard").innerHTML = "";
     setResepStatus("Gagal memuat resep: " + e.message, "err");
@@ -2378,7 +2392,7 @@ function renderResepHpp(){
       ? `<span class="val" style="color:var(--danger); font-size:12px;">${escHtml(b.catatan || "harga tidak ditemukan")}</span>`
       : `<span class="val">${formatRupiah(b.subtotal)}</span>`;
     const rincian = b.hargaPerUnit !== null
-      ? `<div class="resep-sub">${fmtAngka(b.jumlah)} ${escHtml(b.satuan)} × ${formatRupiahDetail(b.hargaPerUnit)}${dariDasar ? " · dari Resep Dasar" : ""}</div>` : "";
+      ? `<div class="resep-sub">${fmtAngka(b.jumlah)} ${escHtml(b.satuan)} × ${formatRupiahDetail(b.hargaPerUnit)}${b.bulanHarga ? " · harga " + bulanPendek(b.bulanHarga) : ""}${dariDasar ? " · dari Resep Dasar" : ""}</div>` : "";
     return `<div class="receipt-line"><span>${escHtml(b.bahanBaku)}${rincian}</span>${nilai}</div>`;
   }
   const unit = resepData.kategori === "Cookies" ? "Pcs" : (resepData.subKategori && resepData.subKategori !== "Cup" ? resepData.subKategori : "Cup");
@@ -2395,7 +2409,8 @@ function renderResepHpp(){
       rows.map(x => baris(x.b, x.dariDasar)).join("") +
       `<div class="receipt-line" style="font-size:13px;"><span style="font-weight:600;">Subtotal ${judul}</span><span class="val" style="font-weight:600;">${formatRupiah(subtotal)}</span></div>`;
   }
-  let html = `<p class="form-section-title" style="margin-top:0">Estimasi HPP per ${escHtml(unit)} · ${fmtTglResep(resepData.tanggal)}</p>` +
+  let html = `<p class="form-section-title" style="margin-top:0">Estimasi HPP per ${escHtml(unit)} · ${fmtTglResep(resepData.tanggal)}</p>
+    <p class="hint-note" style="margin:-2px 0 6px;">Harga bahan = rata-rata pembelian ${escHtml(bulanLabelOf(resepData.bulanHarga || resepData.tanggal.slice(0, 7)))} (kalau tidak ada pembelian bulan itu, pakai bulan terakhir yang ada).</p>` +
     kelompokHtml("Isi Produk", "Isi", resepData.hppIsi) +
     kelompokHtml("Packaging", "Packaging", resepData.hppPackaging) +
     `<div class="receipt-line" style="border-top:1px solid var(--line); margin-top:6px; padding-top:6px;">
@@ -2403,7 +2418,10 @@ function renderResepHpp(){
     </div>
     <div class="receipt-line">
       <span style="font-weight:700;">Total HPP (produk + packaging)</span><span class="val" style="font-weight:700;">${formatRupiah(resepData.hppTotal)}</span>
-    </div>`;
+    </div>` +
+    (resepData.ytd ? `<div class="receipt-line">
+      <span>Total HPP YTD<div class="resep-sub">harga rata-rata Jan – ${escHtml(bulanPendek(resepData.bulanHarga))} ${escHtml(String(resepData.bulanHarga || "").slice(0, 4))}</div></span><span class="val">${formatRupiah(resepData.ytd.hppTotal)}</span>
+    </div>` : "");
   // Harga Jual & GPM = (Harga Jual - Total HPP) / Harga Jual. Harga jual
   // diambil dari harga SAAT INI di Setting Menu (Rider / Outlet / Special).
   const hargaJual = resepData.hargaJual || [];
@@ -2411,7 +2429,7 @@ function renderResepHpp(){
   html += hargaJual.length
     ? hargaJual.map(h => `
       <div class="receipt-line">
-        <span>Harga ${escHtml(h.label)}<div class="resep-sub">${formatRupiah(h.harga)} − HPP ${formatRupiah(resepData.hppTotal)} = laba kotor ${formatRupiah(h.harga - resepData.hppTotal)}</div></span>
+        <span>Harga ${escHtml(h.label)}<div class="resep-sub">${formatRupiah(h.harga)} − HPP ${formatRupiah(resepData.hppTotal)} = laba kotor ${formatRupiah(h.harga - resepData.hppTotal)}${resepData.ytd ? " · GPM YTD " + fmtGpm(h.harga > 0 ? (h.harga - resepData.ytd.hppTotal) / h.harga : null) : ""}</div></span>
         <span class="val" style="font-weight:700; white-space:nowrap; color:${h.gpm !== null && h.gpm < 0 ? "var(--danger)" : "var(--ok)"};">GPM ${fmtGpm(h.gpm)}</span>
       </div>`).join("") +
       '<p class="hint-note">GPM = (Harga Jual − Total HPP) ÷ Harga Jual. Harga jual memakai harga saat ini di Setting Menu.</p>'
@@ -2431,6 +2449,65 @@ function renderResepHpp(){
         </div>`).join("");
   }
   wrap.innerHTML = html;
+}
+
+// ---------- Tren HPP 6 bulan + YTD ----------
+// Harga bahan tiap bulan = rata-rata pembelian bulan itu (carry forward
+// kalau tidak ada pembelian); resep & pengali = yg berlaku di akhir bulan.
+let trenHppToken = 0;
+async function muatTrenHpp(namaMenu){
+  const wrap = $("resepTrenCard");
+  const token = ++trenHppToken;
+  wrap.style.display = "block";
+  wrap.innerHTML = '<p class="form-section-title" style="margin-top:0">Tren HPP</p><p class="hint-note">Memuat...</p>';
+  try{
+    const bulan = ($("resepTanggalAcuan").value || hariIniStr()).slice(0, 7);
+    const data = await apiGet({ action: "getTrenHppMenu", namaMenu, bulan });
+    if(token !== trenHppToken) return; // sudah pindah menu/tanggal
+    renderTrenHpp(data);
+  }catch(e){
+    if(token !== trenHppToken) return;
+    wrap.innerHTML = `<p class="form-section-title" style="margin-top:0">Tren HPP</p><p class="hint-note warn">Gagal memuat tren: ${escHtml(e.message)}</p>`;
+  }
+}
+function renderTrenHpp(data){
+  const wrap = $("resepTrenCard");
+  const tren = data.tren || [];
+  if(!tren.some(t => t.punyaResep)){ wrap.style.display = "none"; return; }
+  const acuan = [...tren].reverse().find(t => (t.hargaJual || []).length) || {};
+  const labels = (acuan.hargaJual || []).map(h => h.label);
+  const pendekLabel = l => l.replace(/ \/ /g, "/");
+  const gpmSel = (row, label) => {
+    const h = (row.hargaJual || []).find(x => x.label === label);
+    if(!h || h.gpm === null || !row.punyaResep) return "-";
+    return `<span style="color:${h.gpm < 0 ? "var(--danger)" : "inherit"};">${fmtGpm(h.gpm)}</span>`;
+  };
+  let sebelumnya = null;
+  const baris = tren.map(t => {
+    let perubahan = "";
+    if(t.punyaResep && sebelumnya && sebelumnya.punyaResep && sebelumnya.hppTotal > 0){
+      const d = (t.hppTotal - sebelumnya.hppTotal) / sebelumnya.hppTotal;
+      if(Math.abs(d) >= 0.005) perubahan = `<div class="${d > 0 ? "tren-naik" : "tren-turun"}">${d > 0 ? "▲" : "▼"} ${fmtGpm(Math.abs(d))}</div>`;
+    }
+    sebelumnya = t;
+    return `<tr>
+      <td>${escHtml(bulanPendek(t.bulan))}</td>
+      <td>${t.punyaResep ? formatRupiah(t.hppTotal) + (t.adaHargaKosong ? '<span style="color:var(--danger);">*</span>' : "") + perubahan : "-"}</td>
+      ${labels.map(l => `<td>${gpmSel(t, l)}</td>`).join("")}
+    </tr>`;
+  }).join("");
+  const y = data.ytd || {};
+  const barisYtd = `<tr class="ytd">
+      <td>YTD</td>
+      <td>${formatRupiah(y.hppTotal)}${y.adaHargaKosong ? '<span style="color:var(--danger);">*</span>' : ""}</td>
+      ${labels.map(l => `<td>${gpmSel(Object.assign({ punyaResep: true }, y), l)}</td>`).join("")}
+    </tr>`;
+  wrap.innerHTML = `<p class="form-section-title" style="margin-top:0">Tren HPP &amp; GPM · 6 bulan</p>
+    <table class="tren-table">
+      <thead><tr><th>Bulan</th><th>HPP</th>${labels.map(l => `<th>GPM ${escHtml(pendekLabel(l))}</th>`).join("")}</tr></thead>
+      <tbody>${baris}${barisYtd}</tbody>
+    </table>
+    <p class="hint-note">Harga bahan per bulan = rata-rata pembelian bulan itu (kalau tidak ada pembelian, pakai bulan terakhir yang ada). YTD = rata-rata pembelian Jan s/d ${escHtml(bulanPendek(y.sampai || ""))}. Harga jual memakai harga saat ini. ▲/▼ = perubahan HPP dari bulan sebelumnya${tren.some(t => t.adaHargaKosong) || y.adaHargaKosong ? "; * = ada bahan yang belum bisa dihitung harganya" : ""}.</p>`;
 }
 
 $("resepTambahBahanBtn").addEventListener("click", async () => {
@@ -2732,69 +2809,127 @@ async function muatBtKomponen(nama, wrap){
 }
 function renderBtKomponen(nama, wrap){
   const data = btDetailTerbukaCache[nama];
-  function labelNilai(k){
-    if(k.jenisAlokasi === "Biaya Periodik") return formatRupiah(k.nilai) + " / " + k.nilai2 + " bln";
-    if(k.jenisAlokasi === "kWh Langsung") return k.nilai + " kWh × " + formatRupiah(k.nilai2) + "/kWh";
-    return k.nilai + "%";
+  // Satuan & harga otomatis per Jenis (dari Procurement): {jenis, satuan, harga, jumlahTransaksi}
+  const hargaJenis = {};
+  (data.hargaJenis || []).forEach(h => { hargaJenis[h.jenis.trim().toLowerCase()] = h; });
+  const infoJenis = j => hargaJenis[String(j || "").trim().toLowerCase()] || null;
+  const satuanBT = escHtml(data.satuan || "");
+  function labelKomponen(k){
+    if(k.jenisAlokasi === "Pemakaian"){
+      return `${escHtml(k.namaBiayaSumber)} — ${fmtAngka(k.nilai)} ${escHtml(k.satuanDipakai || "")}/hari × ${k.tarifDipakai !== null ? formatRupiahDetail(k.tarifDipakai) : "?"}${k.satuanDipakai ? "/" + escHtml(k.satuanDipakai) : ""}${k.tarifOtomatis ? " (otomatis)" : ""}`;
+    }
+    if(k.jenisAlokasi === "kWh per Hari"){
+      return `Listrik mesin — ${fmtAngka(k.nilai)} kWh/hari × ${k.tarifDipakai !== null ? formatRupiahDetail(k.tarifDipakai) : "?"}/kWh${k.tarifOtomatis ? " (otomatis)" : ""} × 30 hari`;
+    }
+    if(k.jenisAlokasi === "Biaya Periodik") return `${escHtml(k.namaBiayaSumber)} — ${formatRupiah(k.nilai)} / ${k.nilai2} bln`;
+    if(k.jenisAlokasi === "kWh Langsung") return `${escHtml(k.namaBiayaSumber)} — ${fmtAngka(k.nilai)} kWh/bulan × ${formatRupiah(k.nilai2)}/kWh (cara lama)`;
+    return `${escHtml(k.namaBiayaSumber)}${k.kategoriSumber ? " (" + escHtml(k.kategoriSumber) + ")" : ""} — ${fmtAngka(k.nilai)}% pembelian bulan ini`;
   }
   const listHtml = data.komponen.length
     ? data.komponen.map(k => `
-        <div class="receipt-line" data-id="${k.id}">
-          <span>${k.namaBiayaSumber}${k.kategoriSumber ? " (" + k.kategoriSumber + ")" : ""} — ${labelNilai(k)}</span>
-          <span class="val">${formatRupiah(k.biayaBulanIni)} <a href="#" class="hapusKomponenBtn" style="color:var(--danger); margin-left:6px;">✕</a></span>
+        <div class="receipt-line" data-id="${escHtml(k.id)}">
+          <span>${labelKomponen(k)}${k.catatan ? `<div class="hint-note warn">${escHtml(k.catatan)}</div>` : ""}</span>
+          <span class="val" style="white-space:nowrap;">${formatRupiah(k.biayaBulanIni)}/bln <a href="#" class="hapusKomponenBtn" style="color:var(--danger); margin-left:6px;">✕</a></span>
         </div>`).join("")
-    : '<p class="empty-note">Belum ada komponen biaya.</p>';
+    : '<p class="hint-note" style="margin:0 0 6px;">Belum ada komponen biaya.</p>';
   wrap.innerHTML = `
     ${listHtml}
     <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);">
-      <label>Nama Biaya Sumber (Jenis)</label>
-      <select class="btKompNama"><option value="">— Pilih Jenis —</option>${jenisProductList.map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("")}</select>
-      <p class="hint-note">Untuk "% Bulanan", yang dijumlah = semua pembelian Jenis ini di Procurement bulan berjalan. Untuk kWh Langsung &amp; Biaya Periodik, nama ini cuma label.</p>
-      <label>Kategori Sumber (Kategori Product)</label>
-      <select class="btKompKategori"><option value="">— Semua Kategori —</option>${kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("")}</select>
-      <label>Jenis Alokasi</label>
-      <div class="row2">
-        <button type="button" class="pool-toggle-btn active btJenisPersenBtn">% Bulanan</button>
+      <label>Jenis Komponen</label>
+      <button type="button" class="pool-toggle-btn active btJenisKwhBtn" style="width:100%;">Pemakaian per Produksi Harian</button>
+      <div class="row2" style="margin-top:6px;">
         <button type="button" class="pool-toggle-btn btJenisPeriodikBtn">Biaya Periodik</button>
+        <button type="button" class="pool-toggle-btn btJenisPersenBtn">% Pembelian Bulanan</button>
       </div>
-      <button type="button" class="pool-toggle-btn btJenisKwhBtn" style="width:100%; margin-top:6px;">kWh Langsung (mis. Listrik mesin es)</button>
-      <div class="btNilaiPersenWrap">
-        <label>Persentase (%)</label>
-        <input type="number" class="btKompNilaiPersen" step="any" placeholder="mis. 30">
+
+      <div class="btNilaiKwhWrap">
+        <label>Jenis yang dipakai</label>
+        <select class="btKompPakaiJenis"><option value="">— Pilih Jenis —</option>${jenisProductList.map(j => {
+          const h = infoJenis(j);
+          return `<option value="${escHtml(j)}">${escHtml(j)}${h ? " (" + formatRupiahDetail(h.harga) + "/" + escHtml(h.satuan) + ")" : ""}</option>`;
+        }).join("")}</select>
+        <p class="hint-note btKompPakaiInfo">Mis. Listrik (kWh), Plastik Es 10kg (pcs), air galon — satuan &amp; harga otomatis dari Procurement.</p>
+        <div class="btKompWattWrap" style="display:none;">
+          <div class="row2">
+            <div><label>Daya mesin (watt)</label><input type="number" class="btKompWatt" step="any" placeholder="mis. 210"></div>
+            <div><label>Jam nyala per hari</label><input type="number" class="btKompJam" step="any" placeholder="mis. 20"></div>
+          </div>
+        </div>
+        <label class="btKompPakaiLabel">Jumlah dipakai untuk produksi ${fmtAngka(data.produksiPerHari)} ${satuanBT} (1 hari)</label>
+        <input type="number" class="btKompKwh" step="any" placeholder="pilih Jenis dulu">
+        <label>Harga manual per satuan (opsional)</label>
+        <input type="text" class="btKompTarifKwh" inputmode="numeric" placeholder="kosongkan = pakai harga otomatis">
       </div>
+
       <div class="btNilaiPeriodikWrap" style="display:none;">
+        <label>Keterangan</label>
+        <input type="text" class="btKompLabelPeriodik" placeholder="mis. Penyusutan mesin es / Filter air">
         <div class="row2">
           <div><label>Nominal (Rp)</label><input type="text" class="btKompNilaiPeriodik" inputmode="numeric" placeholder="Rp0"></div>
-          <div><label>Periode (bulan)</label><input type="number" class="btKompPeriodeBulan" placeholder="mis. 3"></div>
+          <div><label>Dibagi berapa bulan</label><input type="number" class="btKompPeriodeBulan" placeholder="mis. 24"></div>
         </div>
+        <p class="hint-note">Untuk biaya sekali bayar yang dipakai berbulan-bulan, mis. mesin es Rp5.571.380 dibagi umur pakai 24 bulan.</p>
       </div>
-      <div class="btNilaiKwhWrap" style="display:none;">
-        <div class="row2">
-          <div><label>kWh per Bulan (mesin es)</label><input type="number" class="btKompKwh" step="any" placeholder="mis. 150"></div>
-          <div><label>Tarif per kWh (Rp)</label><input type="text" class="btKompTarifKwh" inputmode="numeric" placeholder="Rp1.500"></div>
-        </div>
+
+      <div class="btNilaiPersenWrap" style="display:none;">
+        <label>Jenis yang dijumlah (dari Procurement)</label>
+        <select class="btKompNama"><option value="">— Pilih Jenis —</option>${jenisProductList.map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("")}</select>
+        <label>Kategori (opsional)</label>
+        <select class="btKompKategori"><option value="">— Semua Kategori —</option>${kategoriProductList.map(k => `<option value="${escHtml(k)}">${escHtml(k)}</option>`).join("")}</select>
+        <label>Persentase (%)</label>
+        <input type="number" class="btKompNilaiPersen" step="any" placeholder="mis. 30">
+        <p class="hint-note">Total pembelian Jenis ini bulan berjalan × persentase. Cocok untuk biaya yang dipakai bersama, mis. 30% dari galon air bulan ini.</p>
       </div>
       <button class="primary btTambahKomponenBtn" style="margin-top:10px;">+ Tambah Komponen</button>
     </div>
   `;
   attachRupiahInput(wrap.querySelector(".btKompNilaiPeriodik"));
   attachRupiahInput(wrap.querySelector(".btKompTarifKwh"));
-  let jenisAktif = "Persentase Bulanan";
-  const btnPersen = wrap.querySelector(".btJenisPersenBtn");
-  const btnPeriodik = wrap.querySelector(".btJenisPeriodikBtn");
-  const btnKwh = wrap.querySelector(".btJenisKwhBtn");
+  // kWh per hari otomatis dari watt × jam ÷ 1000 (tetap bisa diketik langsung).
+  const hitungKwh = () => {
+    const w = parseFloat(wrap.querySelector(".btKompWatt").value) || 0;
+    const j = parseFloat(wrap.querySelector(".btKompJam").value) || 0;
+    if(w > 0 && j > 0) wrap.querySelector(".btKompKwh").value = Math.round(w * j / 1000 * 1000) / 1000;
+  };
+  wrap.querySelector(".btKompWatt").addEventListener("input", hitungKwh);
+  wrap.querySelector(".btKompJam").addEventListener("input", hitungKwh);
+  // Pilih Jenis -> tampilkan satuan & harga otomatis; bantuan watt x jam
+  // hanya muncul kalau satuannya kWh.
+  wrap.querySelector(".btKompPakaiJenis").addEventListener("change", () => {
+    const j = wrap.querySelector(".btKompPakaiJenis").value;
+    const h = infoJenis(j);
+    const info = wrap.querySelector(".btKompPakaiInfo");
+    const sat = h ? h.satuan : "";
+    info.className = "hint-note btKompPakaiInfo" + (j && !h ? " warn" : "");
+    info.innerHTML = !j ? "Pilih Jenis dulu."
+      : h ? `Satuan <b>${escHtml(sat)}</b> · harga otomatis <b>${formatRupiahDetail(h.harga)}/${escHtml(sat)}</b> (rata-rata ${h.jumlahTransaksi} pembelian di Procurement).`
+      : `Jenis "${escHtml(j)}" belum pernah dibeli (dengan satuan) di Procurement — isi harga manual.`;
+    wrap.querySelector(".btKompPakaiLabel").textContent =
+      `Jumlah ${sat ? "(" + sat + ") " : ""}dipakai untuk produksi ${fmtAngka(data.produksiPerHari)} ${data.satuan || ""} (1 hari)`;
+    wrap.querySelector(".btKompWattWrap").style.display = sat.toLowerCase() === "kwh" ? "block" : "none";
+    wrap.querySelector(".btKompKwh").placeholder = !j ? "pilih Jenis dulu" : (sat ? "jumlah dalam " + sat : "jumlah");
+  });
+
+  let jenisAktif = "Pemakaian";
+  const tombol = {
+    "Pemakaian": wrap.querySelector(".btJenisKwhBtn"),
+    "Biaya Periodik": wrap.querySelector(".btJenisPeriodikBtn"),
+    "Persentase Bulanan": wrap.querySelector(".btJenisPersenBtn")
+  };
+  const panel = {
+    "Pemakaian": wrap.querySelector(".btNilaiKwhWrap"),
+    "Biaya Periodik": wrap.querySelector(".btNilaiPeriodikWrap"),
+    "Persentase Bulanan": wrap.querySelector(".btNilaiPersenWrap")
+  };
   function pilihJenis(jenis){
     jenisAktif = jenis;
-    btnPersen.classList.toggle("active", jenis === "Persentase Bulanan");
-    btnPeriodik.classList.toggle("active", jenis === "Biaya Periodik");
-    btnKwh.classList.toggle("active", jenis === "kWh Langsung");
-    wrap.querySelector(".btNilaiPersenWrap").style.display = jenis === "Persentase Bulanan" ? "block" : "none";
-    wrap.querySelector(".btNilaiPeriodikWrap").style.display = jenis === "Biaya Periodik" ? "block" : "none";
-    wrap.querySelector(".btNilaiKwhWrap").style.display = jenis === "kWh Langsung" ? "block" : "none";
+    Object.keys(tombol).forEach(k => {
+      tombol[k].classList.toggle("active", k === jenis);
+      panel[k].style.display = k === jenis ? "block" : "none";
+    });
   }
-  btnPersen.addEventListener("click", () => pilihJenis("Persentase Bulanan"));
-  btnPeriodik.addEventListener("click", () => pilihJenis("Biaya Periodik"));
-  btnKwh.addEventListener("click", () => pilihJenis("kWh Langsung"));
+  Object.keys(tombol).forEach(k => tombol[k].addEventListener("click", () => pilihJenis(k)));
+
   wrap.querySelectorAll(".hapusKomponenBtn").forEach(a => {
     a.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -2810,27 +2945,47 @@ function renderBtKomponen(nama, wrap){
     });
   });
   wrap.querySelector(".btTambahKomponenBtn").addEventListener("click", async (e) => {
-    const namaBiayaSumber = wrap.querySelector(".btKompNama").value;
-    const kategoriSumber = wrap.querySelector(".btKompKategori").value;
-    let nilai = 0, nilai2 = "";
-    if(jenisAktif === "Biaya Periodik"){
+    let namaBiayaSumber = "", kategoriSumber = "", nilai = 0, nilai2 = "", pesanKurang = "";
+    if(jenisAktif === "Pemakaian"){
+      namaBiayaSumber = wrap.querySelector(".btKompPakaiJenis").value;
+      nilai = parseFloat(wrap.querySelector(".btKompKwh").value) || 0;
+      nilai2 = parseRupiahInput(wrap.querySelector(".btKompTarifKwh")) || "";
+      if(!namaBiayaSumber) pesanKurang = "Pilih Jenis yang dipakai.";
+      else if(!nilai) pesanKurang = "Isi jumlah yang dipakai untuk produksi 1 hari.";
+      else if(!nilai2 && !infoJenis(namaBiayaSumber)) pesanKurang = "Harga otomatis belum ada untuk Jenis ini, isi harga manual.";
+    }else if(jenisAktif === "Biaya Periodik"){
+      namaBiayaSumber = wrap.querySelector(".btKompLabelPeriodik").value.trim();
       nilai = parseRupiahInput(wrap.querySelector(".btKompNilaiPeriodik"));
       nilai2 = parseInt(wrap.querySelector(".btKompPeriodeBulan").value) || 1;
-    } else if(jenisAktif === "kWh Langsung"){
-      nilai = parseFloat(wrap.querySelector(".btKompKwh").value) || 0;
-      nilai2 = parseRupiahInput(wrap.querySelector(".btKompTarifKwh"));
-    } else {
+      if(!namaBiayaSumber || !nilai) pesanKurang = "Isi keterangan & nominal.";
+    }else{
+      namaBiayaSumber = wrap.querySelector(".btKompNama").value;
+      kategoriSumber = wrap.querySelector(".btKompKategori").value;
       nilai = parseFloat(wrap.querySelector(".btKompNilaiPersen").value) || 0;
+      if(!namaBiayaSumber || !nilai) pesanKurang = "Pilih Jenis & isi persentase.";
     }
-    if(!namaBiayaSumber || !nilai) return;
+    if(pesanKurang){
+      $("btStatusMsg").textContent = pesanKurang;
+      $("btStatusMsg").className = "status err";
+      return;
+    }
     e.target.disabled = true;
     try{
       await apiPost({
         action: "tambahKomponenBiayaTurunan", namaBahanTurunan: nama,
         namaBiayaSumber, kategoriSumber, jenisAlokasi: jenisAktif, nilai, nilai2
       });
-      await muatBtKomponen(nama, wrap);
       await loadBahanTurunanTab();
+      // buka lagi panel komponen bahan ini spy hasilnya langsung kelihatan
+      const kartu = document.querySelector(`#btListCard .card[data-nama="${CSS.escape(nama)}"]`);
+      if(kartu){
+        const btn = kartu.querySelector(".btKelolaKomponenBtn");
+        const w = kartu.querySelector(".btKomponenWrap");
+        w.style.display = "block"; btn.textContent = "Tutup Komponen Biaya";
+        await muatBtKomponen(nama, w);
+      }
+      $("btStatusMsg").textContent = "Komponen tersimpan ✓";
+      $("btStatusMsg").className = "status ok";
     }catch(err){
       $("btStatusMsg").textContent = "Gagal simpan: " + err.message;
       $("btStatusMsg").className = "status err";
