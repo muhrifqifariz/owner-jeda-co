@@ -781,12 +781,12 @@
 
     <div class="card">
       <p class="form-section-title" style="margin-top:0">Tambah Bahan Turunan Baru</p>
-      <label for="btNamaBaru">Nama Bahan Turunan</label>
-      <input type="text" id="btNamaBaru" placeholder="mis. Es Batu">
+      <label for="btNamaBaru">Nama Bahan Turunan (Jenis)</label>
+      <select id="btNamaBaru"><option value="">— Pilih Jenis —</option></select>
       <div class="row2">
         <div>
           <label for="btSatuanBaru">Satuan</label>
-          <input type="text" id="btSatuanBaru" placeholder="mis. gram">
+          <input type="text" id="btSatuanBaru" placeholder="otomatis / mis. gr">
         </div>
         <div>
           <label for="btProduksiBaru">Produksi per Hari</label>
@@ -841,7 +841,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-03-varianringkas-v28";
+const APP_VERSION = "2026-11-05-btjenis-v29";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -2556,6 +2556,7 @@ async function loadBahanTurunanTab(){
     if(!daftarBahanBakuResepCache.length){
       try{ daftarBahanBakuResepCache = (await apiGet({ action: "getBahanBakuResep" })).bahanBaku || []; }catch(e2){ /* tidak fatal */ }
     }
+    isiPilihanJenisBahanTurunan();
     renderBtList();
   }catch(e){
     card.innerHTML = "";
@@ -2563,9 +2564,31 @@ async function loadBahanTurunanTab(){
     $("btStatusMsg").className = "status err";
   }
 }
+// Nama Bahan Turunan dipilih dari daftar Jenis Product (sama dgn tab Type),
+// spy namanya konsisten dgn Procurement. Jenis yg sudah jadi Bahan Turunan
+// tidak ditawarkan lagi.
+function isiPilihanJenisBahanTurunan(){
+  const sudahAda = new Set(daftarBahanTurunanCache.map(b => b.nama));
+  const pilihan = $("btNamaBaru").value;
+  $("btNamaBaru").innerHTML = '<option value="">— Pilih Jenis —</option>' +
+    jenisProductList.filter(j => !sudahAda.has(j))
+      .map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("");
+  if(pilihan && !sudahAda.has(pilihan)) $("btNamaBaru").value = pilihan;
+}
+// Satuan otomatis ikut satuan stock histori pembelian Jenis itu (kalau ada);
+// kalau Jenis itu belum pernah dibeli, satuan tetap bisa diketik manual.
+$("btNamaBaru").addEventListener("change", () => {
+  const b = daftarBahanBakuResepCache.find(x => x.jenis === $("btNamaBaru").value);
+  if(b) $("btSatuanBaru").value = b.satuan;
+});
 $("btTambahBtn").addEventListener("click", async () => {
-  const nama = $("btNamaBaru").value.trim();
+  const nama = $("btNamaBaru").value;
   const satuan = $("btSatuanBaru").value.trim();
+  if(!nama || !satuan || !(parseFloat($("btProduksiBaru").value) > 0)){
+    $("btStatusMsg").textContent = "Pilih Jenis, isi Satuan & Produksi per Hari.";
+    $("btStatusMsg").className = "status err";
+    return;
+  }
   const produksiPerHari = parseFloat($("btProduksiBaru").value) || 0;
   if(!nama || !satuan || !produksiPerHari) return;
   $("btTambahBtn").disabled = true;
@@ -2724,8 +2747,9 @@ function renderBtKomponen(nama, wrap){
   wrap.innerHTML = `
     ${listHtml}
     <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);">
-      <label>Nama Biaya Sumber (dicari di Nama Procurement)</label>
-      <input type="text" class="btKompNama" placeholder="mis. Listrik">
+      <label>Nama Biaya Sumber (Jenis)</label>
+      <select class="btKompNama"><option value="">— Pilih Jenis —</option>${jenisProductList.map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("")}</select>
+      <p class="hint-note">Untuk "% Bulanan", yang dijumlah = semua pembelian Jenis ini di Procurement bulan berjalan. Untuk kWh Langsung &amp; Biaya Periodik, nama ini cuma label.</p>
       <label>Kategori Sumber (Kategori Product)</label>
       <select class="btKompKategori"><option value="">— Semua Kategori —</option>${kategoriProductList.map(k => `<option value="${k}">${k}</option>`).join("")}</select>
       <label>Jenis Alokasi</label>
@@ -2786,7 +2810,7 @@ function renderBtKomponen(nama, wrap){
     });
   });
   wrap.querySelector(".btTambahKomponenBtn").addEventListener("click", async (e) => {
-    const namaBiayaSumber = wrap.querySelector(".btKompNama").value.trim();
+    const namaBiayaSumber = wrap.querySelector(".btKompNama").value;
     const kategoriSumber = wrap.querySelector(".btKompKategori").value;
     let nilai = 0, nilai2 = "";
     if(jenisAktif === "Biaya Periodik"){
