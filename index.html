@@ -774,9 +774,9 @@
     <p class="form-section-title" style="margin-top:0">Bahan Turunan</p>
     <p style="font-size:11.5px; color:var(--ink-soft); margin:0 0 10px;">
       Bahan hasil produksi sendiri (mis. Es Batu) yang biayanya dialokasikan
-      dari pengeluaran Opex (Listrik, Filter Air, dll), bukan dibeli
-      langsung per unit. Biaya per unit dihitung otomatis dari data
-      Procurement bulan berjalan.
+      dari pengeluaran Opex (Listrik, Filter Air, penyusutan mesin, dll).
+      Kalau bahan yang sama juga dibeli, atur di "Campuran Beli" — biaya per
+      unit jadi rata-rata produksi &amp; beli sesuai porsi hariannya.
     </p>
 
     <div class="card">
@@ -841,7 +841,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-03-induk-gpm-v26";
+const APP_VERSION = "2026-11-03-varianringkas-v28";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -2055,7 +2055,7 @@ function fmtTglResep(s){
 function formatRupiahDetail(n){
   const v = Number(n) || 0;
   if(Math.abs(v) >= 100) return formatRupiah(v);
-  return "Rp" + v.toLocaleString("id-ID", { maximumFractionDigits: 2 });
+  return "Rp" + v.toLocaleString("id-ID", { maximumSignificantDigits: 3 });
 }
 function fmtAngka(n){ return (Number(n) || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 }); }
 function fmtGpm(g){ return g === null || g === undefined ? "-" : (g * 100).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; }
@@ -2421,10 +2421,13 @@ function renderResepHpp(){
   }
   if((resepData.varianTurunan || []).length){
     html += `<p class="resep-group-title" style="margin-top:12px;">Menu varian yang memakai resep ini</p>` +
+      // Ringkas: nama + Total HPP di kiri, GPM per harga jual di kanan.
       resepData.varianTurunan.map(v => `
-        <div class="receipt-line">
-          <span>${escHtml(v.namaMenu)}<div class="resep-sub">${escHtml(v.subKategori || "-")}${v.pengali !== null ? " · ×" + fmtAngka(v.pengali) : ""} · produk ${formatRupiah(v.hppIsi)} + packaging ${formatRupiah(v.hppPackaging)}</div></span>
-          <span class="val">${formatRupiah(v.hppTotal)}${v.adaHargaKosong ? ' <span style="color:var(--danger);">*</span>' : ""}${(v.hargaJual || []).length ? `<div class="resep-sub" style="text-align:right;">${v.hargaJual.map(h => escHtml(h.label) + " " + fmtGpm(h.gpm)).join(" · ")}</div>` : ""}</span>
+        <div class="receipt-line" style="align-items:flex-start;">
+          <span>${escHtml(v.namaMenu)}<div class="resep-sub">HPP ${formatRupiah(v.hppTotal)}${v.adaHargaKosong ? ' <span style="color:var(--danger);">*</span>' : ""}</div></span>
+          <span class="val" style="text-align:right; font-size:12.5px; line-height:1.5;">${(v.hargaJual || []).length
+            ? v.hargaJual.map(h => `<div style="white-space:nowrap;">${escHtml(h.label.replace(/ \/ /g, "/"))} <b style="color:${h.gpm !== null && h.gpm < 0 ? "var(--danger)" : "var(--ok)"};">${fmtGpm(h.gpm)}</b></div>`).join("")
+            : '<span class="resep-sub">harga jual belum diisi</span>'}</span>
         </div>`).join("");
   }
   wrap.innerHTML = html;
@@ -2549,6 +2552,10 @@ async function loadBahanTurunanTab(){
   try{
     const data = await apiGet({ action: "getDaftarBahanTurunan" });
     daftarBahanTurunanCache = data.daftar || [];
+    // Daftar Jenis Bahan Baku (dgn harga beli) utk pilihan "campuran beli".
+    if(!daftarBahanBakuResepCache.length){
+      try{ daftarBahanBakuResepCache = (await apiGet({ action: "getBahanBakuResep" })).bahanBaku || []; }catch(e2){ /* tidak fatal */ }
+    }
     renderBtList();
   }catch(e){
     card.innerHTML = "";
@@ -2573,6 +2580,29 @@ $("btTambahBtn").addEventListener("click", async () => {
     $("btTambahBtn").disabled = false;
   }
 });
+// Ringkasan biaya 1 Bahan Turunan: biaya produksi, (kalau ada) harga beli
+// & porsinya, lalu biaya per unit akhir yg dipakai di Resep/HPP.
+function renderBtRingkasan(b){
+  const sat = escHtml(b.satuan);
+  let html = `
+    <div class="receipt-line"><span>Produksi per Hari</span><span class="val">${fmtAngka(b.produksiPerHari)} ${sat}</span></div>
+    <div class="receipt-line"><span>Total Biaya Produksi Bulanan</span><span class="val">${formatRupiah(b.totalBiayaBulanan)}</span></div>
+    <div class="receipt-line"><span>Biaya produksi per ${sat}</span><span class="val">${formatRupiahDetail(b.biayaProduksiPerUnit)}</span></div>`;
+  const campur = b.jenisCampuran && b.pembelianPerHari > 0 && b.hargaBeliPerUnit !== null;
+  if(campur){
+    const porsiProd = 1 - b.porsiBeli;
+    html += `
+    <div class="receipt-line"><span>Beli ${escHtml(b.jenisCampuran)} per Hari</span><span class="val">${fmtAngka(b.pembelianPerHari)} ${sat}</span></div>
+    <div class="receipt-line"><span>Harga beli per ${sat}<div class="resep-sub">rata-rata tertimbang Procurement</div></span><span class="val">${formatRupiahDetail(b.hargaBeliPerUnit)}</span></div>
+    <div class="receipt-line"><span>Porsi pemakaian</span><span class="val" style="white-space:nowrap;">prod ${fmtGpm(porsiProd)} · beli ${fmtGpm(b.porsiBeli)}</span></div>
+    <div class="receipt-line subtotal"><span>Biaya per ${sat} (campuran)<div class="resep-sub">dipakai di Resep &amp; HPP</div></span><span class="val">${formatRupiahDetail(b.biayaPerUnit)}</span></div>`;
+  }else{
+    html += `
+    <div class="receipt-line subtotal"><span>Biaya per ${sat}<div class="resep-sub">dipakai di Resep &amp; HPP</div></span><span class="val">${formatRupiahDetail(b.biayaPerUnit)}</span></div>`;
+  }
+  if(b.catatanCampuran) html += `<p class="hint-note warn">${escHtml(b.catatanCampuran)}</p>`;
+  return html;
+}
 function renderBtList(){
   const card = $("btListCard");
   if(!daftarBahanTurunanCache.length){
@@ -2585,14 +2615,63 @@ function renderBtList(){
         <span style="font-weight:700; font-size:15px;">${b.nama}</span>
         <a href="#" class="hapusBtBtn" style="color:var(--danger); font-size:12px;">Hapus</a>
       </div>
-      <div class="receipt-line"><span>Produksi per Hari</span><span class="val">${b.produksiPerHari} ${b.satuan}</span></div>
-      <div class="receipt-line"><span>Total Biaya Bulanan</span><span class="val">${formatRupiah(b.totalBiayaBulanan)}</span></div>
-      <div class="receipt-line subtotal"><span>Biaya per ${b.satuan}</span><span class="val">${formatRupiah(b.biayaPerUnit)}</span></div>
+      ${renderBtRingkasan(b)}
+      <button type="button" class="btAturCampuranBtn" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink-soft); font-weight:600; cursor:pointer;">Atur Produksi &amp; Campuran Beli</button>
+      <div class="btCampuranWrap" style="display:none; margin-top:10px;">
+        <label>Produksi per Hari (${escHtml(b.satuan)})</label>
+        <input type="number" class="btCampProduksi" step="any" value="${b.produksiPerHari || ""}" placeholder="mis. 22500">
+        <label>Juga dibeli? Pilih Jenis di Procurement</label>
+        <select class="btCampJenis">
+          <option value="">— Tidak, murni produksi —</option>
+          ${daftarBahanBakuResepCache.map(x => `<option value="${escHtml(x.jenis)}"${x.jenis === b.jenisCampuran ? " selected" : ""}>${escHtml(x.jenis)} (${formatRupiahDetail(x.hargaPerUnit)}/${escHtml(x.satuan)})</option>`).join("")}
+        </select>
+        <label>Pembelian per Hari (${escHtml(b.satuan)})</label>
+        <input type="number" class="btCampBeli" step="any" value="${b.pembelianPerHari || ""}" placeholder="mis. 2 bal × 19.950 = 39900">
+        <p class="hint-note">Isi rata-rata harian yang benar-benar dipakai, termasuk pembelian yang tidak tercatat. Harga beli per ${escHtml(b.satuan)} tetap diambil dari rata-rata Procurement; angka harian ini cuma menentukan porsi campurannya.</p>
+        <button class="secondary btSimpanCampuranBtn">Simpan</button>
+      </div>
       <button type="button" class="btKelolaKomponenBtn" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink-soft); font-weight:600; cursor:pointer;">Kelola Komponen Biaya</button>
       <div class="btKomponenWrap" style="display:none; margin-top:10px;"></div>
     </div>
   `).join("");
 
+  card.querySelectorAll(".btAturCampuranBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const wrap = btn.nextElementSibling;
+      wrap.style.display = wrap.style.display === "none" ? "block" : "none";
+    });
+  });
+  card.querySelectorAll(".btSimpanCampuranBtn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const kartu = btn.closest(".card");
+      const nama = kartu.dataset.nama;
+      const produksiPerHari = parseFloat(kartu.querySelector(".btCampProduksi").value) || 0;
+      const jenisCampuran = kartu.querySelector(".btCampJenis").value;
+      const pembelianPerHari = parseFloat(kartu.querySelector(".btCampBeli").value) || 0;
+      if(jenisCampuran && !(pembelianPerHari > 0)){
+        $("btStatusMsg").textContent = "Isi Pembelian per Hari untuk " + jenisCampuran + ".";
+        $("btStatusMsg").className = "status err";
+        return;
+      }
+      if(!(produksiPerHari > 0) && !(pembelianPerHari > 0)){
+        $("btStatusMsg").textContent = "Isi Produksi per Hari (atau Pembelian per Hari).";
+        $("btStatusMsg").className = "status err";
+        return;
+      }
+      btn.disabled = true;
+      try{
+        await apiPost({ action: "setCampuranBahanTurunan", nama, produksiPerHari, jenisCampuran, pembelianPerHari });
+        await loadBahanTurunanTab();
+        $("btStatusMsg").textContent = "Tersimpan ✓ — biaya per unit di Resep ikut berubah.";
+        $("btStatusMsg").className = "status ok";
+      }catch(err){
+        $("btStatusMsg").textContent = "Gagal simpan: " + err.message;
+        $("btStatusMsg").className = "status err";
+      }finally{
+        btn.disabled = false;
+      }
+    });
+  });
   card.querySelectorAll(".hapusBtBtn").forEach(a => {
     a.addEventListener("click", async (e) => {
       e.preventDefault();
