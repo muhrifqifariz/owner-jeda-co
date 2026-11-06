@@ -789,8 +789,10 @@
 
     <div class="card">
       <p class="form-section-title" style="margin-top:0">Tambah Bahan Turunan Baru</p>
-      <label for="btNamaBaru">Nama Bahan Turunan (Jenis)</label>
-      <select id="btNamaBaru"><option value="">— Pilih Jenis —</option></select>
+      <label for="btNamaBaru">Nama Bahan Turunan</label>
+      <input type="text" id="btNamaBaru" list="btNamaSaran" placeholder="mis. Es Batu Campur, Biaya Baking (Oven)" autocomplete="off">
+      <datalist id="btNamaSaran"></datalist>
+      <p class="hint-note" style="margin-top:4px">Nama bebas. Kalau sama dengan Jenis di Procurement, satuan terisi otomatis. Bahan yang juga dibeli diatur di "Campuran Beli".</p>
       <div class="row2">
         <div>
           <label for="btSatuanBaru">Satuan</label>
@@ -849,7 +851,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-05-hppperiode-v33";
+const APP_VERSION = "2026-11-06-namaturunan-v34";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -2641,28 +2643,30 @@ async function loadBahanTurunanTab(){
     $("btStatusMsg").className = "status err";
   }
 }
-// Nama Bahan Turunan dipilih dari daftar Jenis Product (sama dgn tab Type),
-// spy namanya konsisten dgn Procurement. Jenis yg sudah jadi Bahan Turunan
-// tidak ditawarkan lagi.
+// Nama Bahan Turunan BEBAS diketik (mis. "Es Batu Campur", "Biaya Baking
+// (Oven)"); daftar Jenis Product cuma jadi saran (datalist).
 function isiPilihanJenisBahanTurunan(){
-  const sudahAda = new Set(daftarBahanTurunanCache.map(b => b.nama));
-  const pilihan = $("btNamaBaru").value;
-  $("btNamaBaru").innerHTML = '<option value="">— Pilih Jenis —</option>' +
-    jenisProductList.filter(j => !sudahAda.has(j))
-      .map(j => `<option value="${escHtml(j)}">${escHtml(j)}</option>`).join("");
-  if(pilihan && !sudahAda.has(pilihan)) $("btNamaBaru").value = pilihan;
+  const sudahAda = new Set(daftarBahanTurunanCache.map(b => String(b.nama).toLowerCase()));
+  $("btNamaSaran").innerHTML = jenisProductList.filter(j => !sudahAda.has(String(j).toLowerCase()))
+    .map(j => `<option value="${escHtml(j)}">`).join("");
 }
 // Satuan otomatis ikut satuan stock histori pembelian Jenis itu (kalau ada);
 // kalau Jenis itu belum pernah dibeli, satuan tetap bisa diketik manual.
 $("btNamaBaru").addEventListener("change", () => {
-  const b = daftarBahanBakuResepCache.find(x => x.jenis === $("btNamaBaru").value);
-  if(b) $("btSatuanBaru").value = b.satuan;
+  const v = $("btNamaBaru").value.trim().toLowerCase();
+  const b = daftarBahanBakuResepCache.find(x => String(x.jenis).toLowerCase() === v);
+  if(b && !$("btSatuanBaru").value) $("btSatuanBaru").value = b.satuan;
 });
 $("btTambahBtn").addEventListener("click", async () => {
-  const nama = $("btNamaBaru").value;
+  const nama = $("btNamaBaru").value.trim().replace(/\s+/g, " ");
   const satuan = $("btSatuanBaru").value.trim();
+  if(daftarBahanTurunanCache.some(b => String(b.nama).toLowerCase() === nama.toLowerCase())){
+    $("btStatusMsg").textContent = "Bahan Turunan \"" + nama + "\" sudah ada.";
+    $("btStatusMsg").className = "status err";
+    return;
+  }
   if(!nama || !satuan || !(parseFloat($("btProduksiBaru").value) > 0)){
-    $("btStatusMsg").textContent = "Pilih Jenis, isi Satuan & Produksi per Hari.";
+    $("btStatusMsg").textContent = "Isi Nama, Satuan & Produksi per Hari.";
     $("btStatusMsg").className = "status err";
     return;
   }
@@ -2710,10 +2714,15 @@ function renderBtList(){
     return;
   }
   card.innerHTML = daftarBahanTurunanCache.map(b => `
-    <div class="card" data-nama="${b.nama}">
+    <div class="card" data-nama="${escHtml(b.nama)}">
       <div class="receipt-line" style="padding:0;">
-        <span style="font-weight:700; font-size:15px;">${b.nama}</span>
-        <a href="#" class="hapusBtBtn" style="color:var(--danger); font-size:12px;">Hapus</a>
+        <span style="font-weight:700; font-size:15px;">${escHtml(b.nama)}</span>
+        <span style="white-space:nowrap"><a href="#" class="ubahNamaBtBtn" style="color:var(--ink-soft); font-size:12px; margin-right:10px;">Ubah nama</a><a href="#" class="hapusBtBtn" style="color:var(--danger); font-size:12px;">Hapus</a></span>
+      </div>
+      <div class="btUbahNamaWrap" style="display:none; margin:8px 0;">
+        <input type="text" class="btNamaEdit" value="${escHtml(b.nama)}">
+        <p class="hint-note" style="margin-top:4px">Nama di Resep &amp; Komponen Biaya yang memakai bahan ini ikut diganti.</p>
+        <button class="secondary btSimpanNamaBtn">Simpan Nama</button>
       </div>
       ${renderBtRingkasan(b)}
       <button type="button" class="btAturCampuranBtn" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink-soft); font-weight:600; cursor:pointer;">Atur Produksi &amp; Campuran Beli</button>
@@ -2735,6 +2744,37 @@ function renderBtList(){
     </div>
   `).join("");
 
+  card.querySelectorAll(".ubahNamaBtBtn").forEach(a => {
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      const wrap = a.closest(".card").querySelector(".btUbahNamaWrap");
+      wrap.style.display = wrap.style.display === "none" ? "block" : "none";
+    });
+  });
+  card.querySelectorAll(".btSimpanNamaBtn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const kartu = btn.closest(".card");
+      const namaLama = kartu.dataset.nama;
+      const namaBaru = kartu.querySelector(".btNamaEdit").value.trim().replace(/\s+/g, " ");
+      if(!namaBaru || namaBaru === namaLama) return;
+      if(daftarBahanTurunanCache.some(b => b.nama !== namaLama && String(b.nama).toLowerCase() === namaBaru.toLowerCase())){
+        $("btStatusMsg").textContent = "Bahan Turunan \"" + namaBaru + "\" sudah ada.";
+        $("btStatusMsg").className = "status err";
+        return;
+      }
+      btn.disabled = true;
+      try{
+        const r = await apiPost({ action: "renameBahanTurunan", namaLama, namaBaru });
+        await loadBahanTurunanTab();
+        $("btStatusMsg").textContent = `Nama diganti ✓ (${r.nResep || 0} baris resep, ${r.nKomponen || 0} komponen biaya ikut diperbarui)`;
+        $("btStatusMsg").className = "status ok";
+      }catch(err){
+        $("btStatusMsg").textContent = "Gagal ganti nama: " + err.message;
+        $("btStatusMsg").className = "status err";
+        btn.disabled = false;
+      }
+    });
+  });
   card.querySelectorAll(".btAturCampuranBtn").forEach(btn => {
     btn.addEventListener("click", () => {
       const wrap = btn.nextElementSibling;
