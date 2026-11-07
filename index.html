@@ -449,6 +449,28 @@
     </div>
 
     <div class="card">
+      <label style="margin:0 0 6px;">Pembayaran</label>
+      <div class="paystatus-toggle">
+        <button type="button" class="paystatus-btn active paid" id="procBayarLunas">Lunas</button>
+        <button type="button" class="paystatus-btn" id="procBayarDp">DP</button>
+        <button type="button" class="paystatus-btn" id="procBayarPelunasan">Pelunasan DP</button>
+      </div>
+      <p class="hint-note" id="procBayarHint" style="margin-top:6px;">Pembelian dibayar penuh.</p>
+    </div>
+
+    <div class="card" id="procPelunasanCard" style="display:none;">
+      <p class="form-section-title" style="margin-top:0">Pelunasan dari DP</p>
+      <label for="procDpPilih">Pilih barang yang sudah di-DP (belum lunas)</label>
+      <select id="procDpPilih"><option value="">Memuat...</option></select>
+      <div id="procDpInfo" class="hint-note" style="margin-top:6px;"></div>
+      <label for="procPelunasanNominal">Nominal Pelunasan (IDR)</label>
+      <input type="text" id="procPelunasanNominal" inputmode="numeric" placeholder="Rp0">
+      <p class="hint-note">Tanggal pelunasan = Tanggal Pembelian di atas. Baris DP yang sama akan diperbarui: Total = DP + pelunasan, tanggal = tanggal pelunasan, status Lunas. Tidak ada baris kedua.</p>
+      <button class="primary" id="procSimpanPelunasanBtn" style="margin-top:10px;">Simpan Pelunasan</button>
+      <p class="status" id="procPelunasanMsg"></p>
+    </div>
+
+    <div class="card" id="procItemCard">
       <p class="form-section-title" style="margin-top:0">Tambah Item Pembelian</p>
       <label for="procNama">Nama / Merk Product</label>
       <input type="text" id="procNama" list="namaProductOptions" placeholder="Ketik atau pilih nama/merk product" autocomplete="off">
@@ -489,7 +511,7 @@
       <p class="status" id="procItemStatusMsg"></p>
     </div>
 
-    <div class="receipt">
+    <div class="receipt" id="procCartReceipt">
       <h2>Daftar Item Akan Disimpan</h2>
       <div id="procCartLines"><p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item ditambahkan</p></div>
       <div class="receipt-line total"><span>Total Semua Item</span><span class="val" id="procCartGrandTotal">Rp0</span></div>
@@ -872,7 +894,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-07-volumecup-v35";
+const APP_VERSION = "2026-11-07-dp-skema-v36";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1543,7 +1565,7 @@ function renderProcCart(){
     const kategoriLabel = it.subKategori ? `${it.kategoriProduct} - ${it.subKategori}` : it.kategoriProduct;
     return `
       <div class="receipt-line" data-idx="${idx}">
-        <span>${it.namaProduct} — ${it.quantity} ${it.satuanPurchase} (${kategoriLabel})</span>
+        <span>${it.statusBayar === "DP" ? '<b style="color:var(--gold)">[DP]</b> ' : ""}${it.namaProduct} — ${it.quantity} ${it.satuanPurchase} (${kategoriLabel})</span>
         <span class="val">${formatRupiah(it.totalHarga)} <a href="#" class="removeProcItem" style="color:var(--danger); margin-left:8px;">✕</a></span>
       </div>`;
   }).join("");
@@ -1594,7 +1616,7 @@ $("addProcItemBtn").addEventListener("click", () => {
     $("procItemStatusMsg").className = "status err";
     return;
   }
-  procCart.push({ namaProduct, jenisProduct, kategoriProduct, subKategori, totalHarga, quantity, satuanPurchase, konversi, satuanStock });
+  procCart.push({ namaProduct, jenisProduct, kategoriProduct, subKategori, totalHarga, quantity, satuanPurchase, konversi, satuanStock, statusBayar: procModeBayar === "DP" ? "DP" : "Lunas" });
   if(!$("namaProductOptions").innerHTML.includes(`value="${namaProduct}"`)){
     $("namaProductOptions").innerHTML += `<option value="${namaProduct}">`;
   }
@@ -1631,6 +1653,63 @@ $("submitProcurementBtn").addEventListener("click", async () => {
   }finally{
     $("submitProcurementBtn").disabled = false;
   }
+});
+
+// ---------- DP & Pelunasan ----------
+// DP: item tersimpan sbg 1 baris berstatus "DP - belum lunas". Pelunasan:
+// pilih dari daftar DP yg masih terbuka -> baris yg SAMA di-update.
+let procModeBayar = "Lunas", dpTerbukaCache = [];
+attachRupiahInput($("procPelunasanNominal"));
+function setModeBayar(mode){
+  procModeBayar = mode;
+  $("procBayarLunas").className = "paystatus-btn" + (mode === "Lunas" ? " active paid" : "");
+  $("procBayarDp").className = "paystatus-btn" + (mode === "DP" ? " active order" : "");
+  $("procBayarPelunasan").className = "paystatus-btn" + (mode === "Pelunasan" ? " active paid" : "");
+  $("procBayarHint").textContent = mode === "Lunas" ? "Pembelian dibayar penuh."
+    : mode === "DP" ? "Isi Total Harga = nominal DP saja, Quantity = jumlah barang yang dipesan. Tersimpan sebagai \"DP - belum lunas\" (masuk Uang Muka, belum jadi biaya/aset)."
+    : "Pilih barang yang sudah di-DP, lalu isi nominal pelunasannya.";
+  const pel = mode === "Pelunasan";
+  $("procPelunasanCard").style.display = pel ? "" : "none";
+  $("procItemCard").style.display = pel ? "none" : "";
+  $("procCartReceipt").style.display = pel ? "none" : "";
+  $("submitProcurementBtn").style.display = pel ? "none" : "";
+  if(pel) muatDpTerbuka();
+}
+$("procBayarLunas").addEventListener("click", () => setModeBayar("Lunas"));
+$("procBayarDp").addEventListener("click", () => setModeBayar("DP"));
+$("procBayarPelunasan").addEventListener("click", () => setModeBayar("Pelunasan"));
+async function muatDpTerbuka(){
+  $("procDpPilih").innerHTML = '<option value="">Memuat...</option>';
+  try{
+    const d = await apiGet({ action: "getDpTerbuka" });
+    dpTerbukaCache = d.dp || [];
+    $("procDpPilih").innerHTML = dpTerbukaCache.length
+      ? '<option value="">— Pilih barang —</option>' + dpTerbukaCache.map(x => `<option value="${escHtml(x.id)}">${escHtml(x.nama)} · DP ${formatRupiah(x.total)} (${escHtml(x.tanggal)})</option>`).join("")
+      : '<option value="">Tidak ada DP yang belum lunas</option>';
+    $("procDpInfo").textContent = "";
+  }catch(e){
+    $("procDpPilih").innerHTML = '<option value="">Gagal memuat</option>';
+    $("procDpInfo").textContent = e.message;
+  }
+}
+$("procDpPilih").addEventListener("change", () => {
+  const x = dpTerbukaCache.find(d => d.id === $("procDpPilih").value);
+  $("procDpInfo").textContent = x ? `${x.jenis} · ${x.kategori} · ${x.quantity} ${x.satuanPurchase || ""} · DP ${formatRupiah(x.total)} tgl ${x.tanggal}` : "";
+});
+$("procSimpanPelunasanBtn").addEventListener("click", async () => {
+  const id = $("procDpPilih").value, nominal = parseRupiahInput($("procPelunasanNominal")), tanggal = $("procTanggal").value;
+  const msg = $("procPelunasanMsg");
+  if(!id || !(nominal > 0) || !tanggal){ msg.textContent = "Pilih barang, isi nominal pelunasan & Tanggal Pembelian."; msg.className = "status err"; return; }
+  const x = dpTerbukaCache.find(d => d.id === id);
+  if(!confirm(`Lunasi "${x ? x.nama : ""}"?\nDP ${formatRupiah(x ? x.total : 0)} + pelunasan ${formatRupiah(nominal)} = ${formatRupiah((x ? x.total : 0) + nominal)}, tanggal ${tanggal}.`)) return;
+  $("procSimpanPelunasanBtn").disabled = true;
+  try{
+    const r = await apiPost({ action: "lunasiDp", id, tanggal, nominal });
+    msg.textContent = "Lunas ✓ " + r.keterangan; msg.className = "status ok";
+    $("procPelunasanNominal").value = "";
+    await muatDpTerbuka();
+  }catch(e){ msg.textContent = "Gagal: " + e.message; msg.className = "status err"; }
+  finally{ $("procSimpanPelunasanBtn").disabled = false; }
 });
 
 // ---------- Jenis Product ----------
@@ -1743,6 +1822,8 @@ async function loadHrTab(sub){
     if($("hrKehadiranRider").value && $("hrKehadiranBulan").value) loadKehadiran($("hrKehadiranRider").value, $("hrKehadiranBulan").value);
   } else if(sub === "gaji"){
     populateBulanSelect("hrGajiBulan");
+    const kg = daftarKaryawanCache.find(x => x.rider === $("hrGajiRider").value);
+    if(kg && (kg.skemaGaji === "1" || kg.skemaGaji === "2")){ hrGajiSkema = kg.skemaGaji; terapkanTampilanSkema(hrGajiSkema); }
     if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
   } else if(sub === "karyawan"){
     loadKaryawan();
@@ -1755,6 +1836,12 @@ $("hrKehadiranBulan").addEventListener("change", () => {
   if($("hrKehadiranRider").value && $("hrKehadiranBulan").value) loadKehadiran($("hrKehadiranRider").value, $("hrKehadiranBulan").value);
 });
 $("hrGajiRider").addEventListener("change", () => {
+  // Skema gaji otomatis ikut setelan rider (Jeda Report > Pengaturan:
+  // SKEMA_GAJI:<nama>). Tombol skema tetap bisa dipakai utk melihat versi lain.
+  const k = daftarKaryawanCache.find(x => x.rider === $("hrGajiRider").value);
+  if(k && (k.skemaGaji === "1" || k.skemaGaji === "2") && k.skemaGaji !== hrGajiSkema){
+    hrGajiSkema = k.skemaGaji; terapkanTampilanSkema(hrGajiSkema);
+  }
   if($("hrGajiRider").value && $("hrGajiBulan").value) loadGaji($("hrGajiRider").value, $("hrGajiBulan").value);
 });
 $("hrGajiBulan").addEventListener("change", () => {
