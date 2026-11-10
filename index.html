@@ -894,7 +894,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-07-dp-skema-v36";
+const APP_VERSION = "2026-11-09-gratis-bonus-v37";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1977,6 +1977,9 @@ function renderSlipGaji(g){
   const cupCookiesAsliNote = g.totalCupCookiesAsli !== g.totalCupCookies
     ? `<div class="receipt-line"><span style="font-size:12px; color:var(--ink-soft);">Sebelum penyesuaian</span><span class="val" style="font-size:12px; color:var(--ink-soft);">${g.totalCupCookiesAsli}</span></div>`
     : "";
+  const cupGratisNote = g.totalCupGratis
+    ? `<div class="receipt-line"><span style="font-size:12px; color:var(--ink-soft);">Termasuk cup gratis loyalty</span><span class="val" style="font-size:12px; color:var(--ink-soft);">${Math.round(g.totalCupGratis * 100) / 100}</span></div>`
+    : "";
   card.innerHTML = `
     <h2>Slip Gaji — ${g.rider}</h2>
     <p class="meta" style="text-align:center; margin-top:12px; font-weight:700;">Periode ${periodeLabel}</p>
@@ -1988,6 +1991,7 @@ function renderSlipGaji(g){
     <p style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--maroon-dark); margin:14px 0 4px;">Dibayar Bulanan</p>
     <div class="receipt-line"><span>Gaji Dasar (${formatRupiah(g.gajiDasarHarian)}/hari)</span><span class="val">${formatRupiah(g.gajiDasar)}</span></div>
     ${cupCookiesAsliNote}
+    ${cupGratisNote}
     ${cupCookiesLinesHtml}
     <div class="receipt-line"><span>Total Cup + Cookies Terjual</span><span class="val">${g.totalCupCookies}</span></div>
     <div class="receipt-line"><span>Bonus Bulanan (${g.bonusTierLabel})</span><span class="val">${formatRupiah(g.bonusBulanan)}</span></div>
