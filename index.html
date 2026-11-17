@@ -142,7 +142,8 @@
   .menu-item-calc .val{ font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink); }
 
   /* status bayar toggle */
-  .paystatus-toggle{ display:flex; gap:10px; margin-top:6px; }
+  .paystatus-toggle{ display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
+  .paystatus-toggle .paystatus-btn{ padding:12px 6px; font-size:13px; min-width:calc(25% - 6px); }
   .paystatus-btn{
     flex:1; padding:12px; border-radius:10px; border:1.5px solid var(--line);
     background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:14px; cursor:pointer;
@@ -150,6 +151,10 @@
   .paystatus-btn.active.paid{ background:var(--ok); border-color:var(--ok); color:#fff; }
   .paystatus-btn.active.unpaid{ background:var(--danger); border-color:var(--danger); color:#fff; }
   .paystatus-btn.active.order{ background:var(--gold); border-color:var(--gold); color:#fff; }
+  .paystatus-btn.active.gratis{ background:#6D28D9; border-color:#6D28D9; color:#fff; }
+  .gratis-box{ display:none; margin-top:12px; padding:12px; border:1.5px dashed #6D28D9; border-radius:12px; background:#F5F3FF; }
+  .gratis-box.open{ display:block; }
+  .gratis-box p{ font-size:12.5px; color:#4C1D95; margin:8px 0 0; line-height:1.45; }
 
   .receipt{
     margin-top:16px; background:var(--paper-2); border-radius:16px 16px 4px 4px;
@@ -361,6 +366,19 @@
         <button type="button" class="paystatus-btn active paid" id="btnPaid">✓ Sudah Dibayar</button>
         <button type="button" class="paystatus-btn" id="btnUnpaid">Belum Dibayar</button>
         <button type="button" class="paystatus-btn" id="btnOrder">PO</button>
+        <button type="button" class="paystatus-btn" id="btnGratis">🎁 Gratis</button>
+      </div>
+      <div class="gratis-box" id="gratisBox">
+        <label for="alasanGratis" style="margin:0 0 6px;">Alasan diberikan gratis</label>
+        <select id="alasanGratis">
+          <option value="">— Pilih alasan —</option>
+          <option>KOL / Endorse</option>
+          <option>Tester / Sampling</option>
+          <option>Kompensasi Komplain</option>
+          <option>Hadiah / Relasi</option>
+          <option>Lainnya</option>
+        </select>
+        <p>Produk tercatat keluar <b>tanpa uang masuk</b> (total Rp0). Di Jeda Report: nilai jualnya tampil di “Produk Gratis”, biaya bahannya masuk Marketing &amp; Promosi. Diskon &amp; ongkir diabaikan.</p>
       </div>
     </div>
 
@@ -377,6 +395,7 @@
         <option value="Sudah Dibayar">Sudah Lunas</option>
         <option value="Belum Dibayar">Belum Lunas</option>
         <option value="PO">PO</option>
+        <option value="Gratis">Gratis</option>
       </select>
     </div>
     <div id="belumDibayarList"></div>
@@ -894,7 +913,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-09-gratis-bonus-v37";
+const APP_VERSION = "2026-11-17-gratis-v38";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1197,8 +1216,11 @@ function updateCartSummary(){
     return `<div class="receipt-line"><span>${it.menu}${tierLabel} × ${it.qty}${diskonNote}</span><span class="val">${formatRupiah(Math.max(0, itemTotal - it.diskonFinal))}</span></div>`;
   });
   $("cartSummaryLines").innerHTML = lines.join("") || '<p style="text-align:center; color:var(--ink-soft); font-size:13px;">Belum ada item dipilih</p>';
-  const ongkir = parseRupiahInput($("ongkirInput"));
-  const grandTotal = Math.max(0, subtotal - totalDiskon + ongkir);
+  const isGratis = statusBayar === "Gratis";
+  if(isGratis && lines.length) lines.push(`<div class="receipt-line" style="color:#6D28D9; font-weight:700;"><span>🎁 GRATIS${$("alasanGratis").value ? " — " + $("alasanGratis").value : ""}</span><span class="val">−${formatRupiah(Math.max(0, subtotal - totalDiskon))}</span></div>`);
+  if(isGratis) $("cartSummaryLines").innerHTML = lines.join("") || $("cartSummaryLines").innerHTML;
+  const ongkir = isGratis ? 0 : parseRupiahInput($("ongkirInput"));
+  const grandTotal = isGratis ? 0 : Math.max(0, subtotal - totalDiskon + ongkir);
   $("cartSubtotal").textContent = formatRupiah(subtotal);
   if(ongkir > 0){
     $("cartOngkirLine").style.display = "flex";
@@ -1226,13 +1248,20 @@ function setStatusBayar(status){
   $("btnUnpaid").classList.toggle("unpaid", status === "Belum Dibayar");
   $("btnOrder").classList.toggle("active", status === "PO");
   $("btnOrder").classList.toggle("order", status === "PO");
+  $("btnGratis").classList.toggle("active", status === "Gratis");
+  $("btnGratis").classList.toggle("gratis", status === "Gratis");
+  $("gratisBox").classList.toggle("open", status === "Gratis");
+  updateCartSummary();
 }
+$("btnGratis").addEventListener("click", () => setStatusBayar("Gratis"));
+$("alasanGratis").addEventListener("change", () => updateCartSummary());
 $("btnPaid").addEventListener("click", () => setStatusBayar("Sudah Dibayar"));
 $("btnUnpaid").addEventListener("click", () => setStatusBayar("Belum Dibayar"));
 $("btnOrder").addEventListener("click", () => setStatusBayar("PO"));
 
 // ---------- Submit Penjualan ----------
 function exitEditMode(){
+  if(statusBayar === "Gratis"){ $("alasanGratis").value = ""; setStatusBayar("Sudah Dibayar"); } // gratis tidak terbawa ke transaksi lain
   editingTransaksiId = null;
   $("editModeNote").style.display = "none";
   $("submitPenjualanBtn").textContent = "Catat Transaksi";
@@ -1298,6 +1327,8 @@ async function openInvoice(transaksiId){
     }
 
     setInvoiceStatusButtons(detail.statusBayar);
+    // Transaksi gratis: status hanya bisa diubah lewat Edit
+    $("invBtnPaid").closest(".card").style.display = detail.statusBayar === "Gratis" ? "none" : "";
     $("editInvoiceBtn").style.display = "block";
     $("invoiceStatusMsg").textContent = "";
   }catch(e){
@@ -1370,6 +1401,13 @@ async function enterEditMode(transaksiId){
       item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === tier));
       item.querySelector(".subtotal").textContent = formatRupiah(Math.max(0, qty * getItemHarga(item) - diskonVal));
     });
+    $("alasanGratis").value = detail.alasanGratis || "";
+    if(detail.statusBayar === "Gratis"){
+      // server lama: buang awalan "GRATIS (...)" & diskon 100% per item supaya tidak dobel
+      const mG = /^GRATIS \(([^)]*)\)( · )?/.exec($("keteranganInput").value);
+      if(mG){ if(!$("alasanGratis").value) $("alasanGratis").value = mG[1]; $("keteranganInput").value = $("keteranganInput").value.replace(mG[0], ""); }
+      document.querySelectorAll("#menuOwnerListCard .menu-item .itemDiskon").forEach(i => { i.value = ""; });
+    }
     updateCartSummary();
     setStatusBayar(detail.statusBayar || "Belum Dibayar");
     $("editModeNote").style.display = "block";
@@ -1399,14 +1437,30 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
     return;
   }
   localStorage.setItem("nama_penjual_owner", penjual);
-  const discount = parseRupiahInput($("discountInput"));
-  const ongkir = parseRupiahInput($("ongkirInput"));
+  let discount = parseRupiahInput($("discountInput"));
+  let ongkir = parseRupiahInput($("ongkirInput"));
+  const isGratis = statusBayar === "Gratis";
+  const alasanGratis = $("alasanGratis").value;
+  let keteranganKirim = keterangan;
+  if(isGratis){
+    if(!alasanGratis){
+      $("penjualanStatusMsg").textContent = "Pilih alasan gratis dulu";
+      $("penjualanStatusMsg").className = "status err";
+      return;
+    }
+    const nilai = items.reduce((t, it) => t + it.harga * it.qty, 0);
+    if(!confirm("Catat sebagai GRATIS (" + alasanGratis + ")?\n\n" + items.map(it => "• " + it.menu + " × " + it.qty).join("\n") + "\n\nNilai jual " + formatRupiah(nilai) + " — tidak ada uang masuk.")) return;
+    // Diskon 100% per item (aman juga kalau Kode.gs di server masih versi lama)
+    items.forEach(it => { it.manualDiskon = it.harga * it.qty; });
+    discount = 0; ongkir = 0;
+    keteranganKirim = "GRATIS (" + alasanGratis + ")" + (keterangan ? " · " + keterangan : "");
+  }
   $("submitPenjualanBtn").disabled = true;
   $("penjualanStatusMsg").textContent = "Menyimpan...";
   $("penjualanStatusMsg").className = "status";
   try{
     const payload = {
-      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, ongkir, keterangan
+      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, ongkir, keterangan: keteranganKirim, alasanGratis: isGratis ? alasanGratis : ""
     };
     let result;
     if(editingTransaksiId){
@@ -1425,6 +1479,8 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
       $("customerOptions").innerHTML += `<option value="${customer}">`;
     }
     exitEditMode();
+    // Gratis TIDAK dibawa ke transaksi berikutnya (supaya penjualan biasa tidak ikut gratis)
+    if(statusBayar === "Gratis"){ $("alasanGratis").value = ""; setStatusBayar("Sudah Dibayar"); }
     // reset form utk transaksi berikutnya
     $("customerInput").value = "";
     $("discountInput").value = "";
@@ -1476,7 +1532,7 @@ function renderBelumDibayar(list){
     container.innerHTML = '<p class="empty-note">Tidak ada transaksi untuk filter ini.</p>';
     return;
   }
-  const badgeColors = { "PO": "var(--gold)", "Belum Dibayar": "var(--danger)", "Sudah Dibayar": "var(--ok)" };
+  const badgeColors = { "PO": "var(--gold)", "Belum Dibayar": "var(--danger)", "Sudah Dibayar": "var(--ok)", "Gratis": "#6D28D9" };
   container.innerHTML = list.map(t => {
     const tanggalStr = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
     const badgeColor = badgeColors[t.status] || "var(--ink-soft)";
@@ -1499,7 +1555,7 @@ function renderBelumDibayar(list){
           <div style="display:flex; flex-direction:column; gap:6px;">
             <button class="icon-btn editPoBtn" style="font-size:11px;">Edit</button>
             ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
-            ${t.status !== "Sudah Dibayar" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
+            ${t.status !== "Sudah Dibayar" && t.status !== "Gratis" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
           </div>
         </div>
       </div>`;
