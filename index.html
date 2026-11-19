@@ -152,6 +152,13 @@
   .paystatus-btn.active.unpaid{ background:var(--danger); border-color:var(--danger); color:#fff; }
   .paystatus-btn.active.order{ background:var(--gold); border-color:var(--gold); color:#fff; }
   .paystatus-btn.active.gratis{ background:#6D28D9; border-color:#6D28D9; color:#fff; }
+  .paystatus-btn.active.prod-po{ background:var(--gold); border-color:var(--gold); color:#fff; }
+  .paystatus-btn.active.prod-belum{ background:#C2410C; border-color:#C2410C; color:#fff; }
+  .paystatus-btn.active.prod-sudah{ background:#1D4ED8; border-color:#1D4ED8; color:#fff; }
+  .paystatus-toggle.tiga .paystatus-btn{ min-width:calc(33.3% - 6px); }
+  .status-sub{ font-size:12px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin:12px 0 2px; }
+  .status-sub:first-child{ margin-top:0; }
+  .st-chip{ display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; padding:2px 8px; border-radius:8px; margin-right:4px; }
   .gratis-box{ display:none; margin-top:12px; padding:12px; border:1.5px dashed #6D28D9; border-radius:12px; background:#F5F3FF; }
   .gratis-box.open{ display:block; }
   .gratis-box p{ font-size:12.5px; color:#4C1D95; margin:8px 0 0; line-height:1.45; }
@@ -361,11 +368,16 @@
     </p>
 
     <div class="card">
-      <label style="margin:0 0 8px;">Status Bayar</label>
-      <div class="paystatus-toggle">
-        <button type="button" class="paystatus-btn active paid" id="btnPaid">✓ Sudah Dibayar</button>
-        <button type="button" class="paystatus-btn" id="btnUnpaid">Belum Dibayar</button>
-        <button type="button" class="paystatus-btn" id="btnOrder">PO</button>
+      <p class="status-sub">Status Produk</p>
+      <div class="paystatus-toggle tiga">
+        <button type="button" class="paystatus-btn" id="btnProdPO">PO</button>
+        <button type="button" class="paystatus-btn" id="btnProdBelum">Belum Diterima</button>
+        <button type="button" class="paystatus-btn active prod-sudah" id="btnProdSudah">✓ Sudah Diterima</button>
+      </div>
+      <p class="status-sub">Status Bayar</p>
+      <div class="paystatus-toggle tiga">
+        <button type="button" class="paystatus-btn" id="btnUnpaid">Belum Bayar</button>
+        <button type="button" class="paystatus-btn active paid" id="btnPaid">✓ Sudah Bayar</button>
         <button type="button" class="paystatus-btn" id="btnGratis">🎁 Gratis</button>
       </div>
       <div class="gratis-box" id="gratisBox">
@@ -378,7 +390,7 @@
           <option>Hadiah / Relasi</option>
           <option>Lainnya</option>
         </select>
-        <p>Produk tercatat keluar <b>tanpa uang masuk</b> (total Rp0). Di Jeda Report: nilai jualnya tampil di “Produk Gratis”, biaya bahannya masuk Marketing &amp; Promosi. Diskon &amp; ongkir diabaikan.</p>
+        <p>Produk tercatat keluar <b>tanpa uang masuk</b> (total Rp0). Di Jeda Report tidak masuk penjualan; biaya bahannya masuk Marketing &amp; Promosi. Diskon &amp; ongkir diabaikan.</p>
       </div>
     </div>
 
@@ -392,10 +404,19 @@
     <div class="card" style="padding:10px 12px;">
       <select id="inquiryFilter" style="border:none; padding:6px;">
         <option value="">Semua Status</option>
-        <option value="Sudah Dibayar">Sudah Lunas</option>
-        <option value="Belum Dibayar">Belum Lunas</option>
-        <option value="PO">PO</option>
-        <option value="Gratis">Gratis</option>
+        <optgroup label="Ringkas">
+          <option value="bayar:Belum Dibayar">Semua yang belum bayar</option>
+          <option value="produk:belum">Semua yang belum diterima (PO + Belum Diterima)</option>
+        </optgroup>
+        <optgroup label="Status Produk · Status Bayar">
+          <option value="PO|Belum Dibayar">PO · Belum Bayar</option>
+          <option value="PO|Sudah Dibayar">PO · Sudah Bayar</option>
+          <option value="Belum Diterima|Belum Dibayar">Belum Diterima · Belum Bayar</option>
+          <option value="Belum Diterima|Sudah Dibayar">Belum Diterima · Sudah Bayar</option>
+          <option value="Sudah Diterima|Belum Dibayar">Sudah Diterima · Belum Bayar</option>
+          <option value="Sudah Diterima|Sudah Dibayar">Sudah Diterima · Sudah Bayar</option>
+        </optgroup>
+        <option value="bayar:Gratis">Gratis</option>
       </select>
     </div>
     <div id="belumDibayarList"></div>
@@ -448,12 +469,20 @@
     </div>
 
     <div class="card">
-      <label style="margin:0 0 8px;">Status Bayar</label>
-      <div class="paystatus-toggle">
-        <button type="button" class="paystatus-btn" id="invBtnPaid">✓ Sudah Dibayar</button>
-        <button type="button" class="paystatus-btn" id="invBtnUnpaid">Belum Dibayar</button>
-        <button type="button" class="paystatus-btn" id="invBtnPO">PO</button>
+      <p class="status-sub">Status Produk</p>
+      <div class="paystatus-toggle tiga">
+        <button type="button" class="paystatus-btn" id="invProdPO">PO</button>
+        <button type="button" class="paystatus-btn" id="invProdBelum">Belum Diterima</button>
+        <button type="button" class="paystatus-btn" id="invProdSudah">✓ Sudah Diterima</button>
       </div>
+      <div id="invBayarBox">
+        <p class="status-sub">Status Bayar</p>
+        <div class="paystatus-toggle">
+          <button type="button" class="paystatus-btn" id="invBtnUnpaid">Belum Bayar</button>
+          <button type="button" class="paystatus-btn" id="invBtnPaid">✓ Sudah Bayar</button>
+        </div>
+      </div>
+      <p class="status-sub" id="invGratisNote" style="display:none; color:#6D28D9;">🎁 Transaksi gratis — status bayar hanya bisa diubah lewat Edit</p>
     </div>
 
     <button class="secondary" id="editInvoiceBtn" style="display:none;">Edit Transaksi Ini</button>
@@ -913,7 +942,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-17-gratis-v38";
+const APP_VERSION = "2026-11-20-status-produk-v39";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -936,7 +965,18 @@ let kategoriModalAsetList = [];
 let subKategoriGajiList = [];
 let procCart = []; // array of {namaProduct, jenisProduct, kategoriProduct, totalHarga, quantity, satuanPurchase, konversi, satuanStock}
 let cart = {}; // { menuName: qty }
-let statusBayar = "Sudah Dibayar";
+let statusBayar = "Sudah Dibayar";   // Sudah Dibayar / Belum Dibayar / Gratis
+let statusProduk = "Sudah Diterima"; // PO / Belum Diterima / Sudah Diterima
+const LABEL_BAYAR = { "Sudah Dibayar": "Sudah Bayar", "Belum Dibayar": "Belum Bayar", "Gratis": "Gratis" };
+const WARNA_BAYAR = { "Sudah Dibayar": "var(--ok)", "Belum Dibayar": "var(--danger)", "Gratis": "#6D28D9" };
+const WARNA_PRODUK = { "PO": "var(--gold)", "Belum Diterima": "#C2410C", "Sudah Diterima": "#1D4ED8" };
+// Normalisasi (server lama mengirim status "PO" = PO & belum bayar)
+function normStatus(bayar, produk){
+  if(bayar === "PO") return { bayar: "Belum Dibayar", produk: produk || "PO" };
+  return { bayar: LABEL_BAYAR[bayar] ? bayar : "Belum Dibayar", produk: WARNA_PRODUK[produk] ? produk : "Sudah Diterima" };
+}
+// statusBayar yg dikirim ke server: "PO" bila PO & belum bayar -> tetap benar walau Kode.gs belum diperbarui
+function bayarKirim(bayar, produk){ return (produk === "PO" && bayar === "Belum Dibayar") ? "PO" : bayar; }
 let editingTransaksiId = null;
 
 function formatRupiah(n){ return "Rp" + Math.round(n || 0).toLocaleString("id-ID"); }
@@ -1240,14 +1280,21 @@ $("discountInput").addEventListener("input", updateCartSummary);
 attachRupiahInput($("ongkirInput"));
 $("ongkirInput").addEventListener("input", updateCartSummary);
 // ---------- Status bayar toggle ----------
+function setStatusProduk(p){
+  statusProduk = p;
+  [["btnProdPO", "PO", "prod-po"], ["btnProdBelum", "Belum Diterima", "prod-belum"], ["btnProdSudah", "Sudah Diterima", "prod-sudah"]].forEach(([id, v, cls]) => {
+    $(id).classList.toggle("active", p === v); $(id).classList.toggle(cls, p === v);
+  });
+}
+$("btnProdPO").addEventListener("click", () => setStatusProduk("PO"));
+$("btnProdBelum").addEventListener("click", () => setStatusProduk("Belum Diterima"));
+$("btnProdSudah").addEventListener("click", () => setStatusProduk("Sudah Diterima"));
 function setStatusBayar(status){
   statusBayar = status;
   $("btnPaid").classList.toggle("active", status === "Sudah Dibayar");
   $("btnPaid").classList.toggle("paid", status === "Sudah Dibayar");
   $("btnUnpaid").classList.toggle("active", status === "Belum Dibayar");
   $("btnUnpaid").classList.toggle("unpaid", status === "Belum Dibayar");
-  $("btnOrder").classList.toggle("active", status === "PO");
-  $("btnOrder").classList.toggle("order", status === "PO");
   $("btnGratis").classList.toggle("active", status === "Gratis");
   $("btnGratis").classList.toggle("gratis", status === "Gratis");
   $("gratisBox").classList.toggle("open", status === "Gratis");
@@ -1257,7 +1304,6 @@ $("btnGratis").addEventListener("click", () => setStatusBayar("Gratis"));
 $("alasanGratis").addEventListener("change", () => updateCartSummary());
 $("btnPaid").addEventListener("click", () => setStatusBayar("Sudah Dibayar"));
 $("btnUnpaid").addEventListener("click", () => setStatusBayar("Belum Dibayar"));
-$("btnOrder").addEventListener("click", () => setStatusBayar("PO"));
 
 // ---------- Submit Penjualan ----------
 function exitEditMode(){
@@ -1283,7 +1329,7 @@ $("cancelEditBtn").addEventListener("click", (e) => {
     item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "special"));
   });
   updateCartSummary();
-  $("btnPaid").click();
+  $("btnPaid").click(); setStatusProduk("Sudah Diterima");
 });
 // ---------- Invoice / Nota Penjualan (buka dari tap kartu di Inquiry) ----------
 let currentInvoiceId = null;
@@ -1326,9 +1372,8 @@ async function openInvoice(transaksiId){
       $("invoiceKeteranganLine").style.display = "none";
     }
 
-    setInvoiceStatusButtons(detail.statusBayar);
-    // Transaksi gratis: status hanya bisa diubah lewat Edit
-    $("invBtnPaid").closest(".card").style.display = detail.statusBayar === "Gratis" ? "none" : "";
+    invoiceStatus = normStatus(detail.statusBayar, detail.statusProduk);
+    setInvoiceStatusButtons();
     $("editInvoiceBtn").style.display = "block";
     $("invoiceStatusMsg").textContent = "";
   }catch(e){
@@ -1336,35 +1381,47 @@ async function openInvoice(transaksiId){
     $("invoiceStatusMsg").className = "status err";
   }
 }
-function setInvoiceStatusButtons(status){
-  const map = { "Sudah Dibayar": "invBtnPaid", "Belum Dibayar": "invBtnUnpaid", "PO": "invBtnPO" };
-  ["invBtnPaid", "invBtnUnpaid", "invBtnPO"].forEach(id => {
-    $(id).classList.remove("active", "paid", "unpaid", "order");
+let invoiceStatus = { bayar: "Sudah Dibayar", produk: "Sudah Diterima" };
+function setInvoiceStatusButtons(){
+  const st = invoiceStatus, gratis = st.bayar === "Gratis";
+  [["invProdPO", "PO", "prod-po"], ["invProdBelum", "Belum Diterima", "prod-belum"], ["invProdSudah", "Sudah Diterima", "prod-sudah"]].forEach(([id, v, cls]) => {
+    $(id).classList.remove("active", "prod-po", "prod-belum", "prod-sudah");
+    if(st.produk === v) $(id).classList.add("active", cls);
   });
-  const activeId = map[status];
-  if(activeId){
-    const cls = status === "Sudah Dibayar" ? "paid" : (status === "Belum Dibayar" ? "unpaid" : "order");
-    $(activeId).classList.add("active", cls);
-  }
+  $("invBtnPaid").classList.remove("active", "paid"); $("invBtnUnpaid").classList.remove("active", "unpaid");
+  if(st.bayar === "Sudah Dibayar") $("invBtnPaid").classList.add("active", "paid");
+  if(st.bayar === "Belum Dibayar") $("invBtnUnpaid").classList.add("active", "unpaid");
+  $("invBayarBox").style.display = gratis ? "none" : "";
+  $("invGratisNote").style.display = gratis ? "" : "none";
 }
-async function changeInvoiceStatus(newStatus){
+// Simpan perubahan status (bayar dan/atau produk) utk 1 transaksi
+async function simpanStatusTransaksi(id, bayar, produk){
+  return apiPost({ action: "updateStatusBayar", transaksiId: id, statusBayar: bayarKirim(bayar, produk), statusProduk: produk });
+}
+async function changeInvoiceStatus(ubah){
   if(!currentInvoiceId) return;
+  const baru = Object.assign({}, invoiceStatus, ubah);
+  if(baru.bayar === invoiceStatus.bayar && baru.produk === invoiceStatus.produk) return;
   $("invoiceStatusMsg").textContent = "Menyimpan...";
   $("invoiceStatusMsg").className = "status";
   try{
-    await apiPost({ action: "updateStatusBayar", transaksiId: currentInvoiceId, statusBayar: newStatus });
-    setInvoiceStatusButtons(newStatus);
-    $("editInvoiceBtn").style.display = newStatus === "PO" ? "block" : "none";
-    $("invoiceStatusMsg").textContent = "Status diperbarui ✓";
+    await simpanStatusTransaksi(currentInvoiceId, baru.bayar, baru.produk);
+    invoiceStatus = baru;
+    setInvoiceStatusButtons();
+    const c = allTransaksiCache.find(t => t.idTransaksi === currentInvoiceId);
+    if(c){ c.status = baru.bayar; c.statusProduk = baru.produk; }
+    $("invoiceStatusMsg").textContent = "Status diperbarui ✓ (" + baru.produk + " · " + LABEL_BAYAR[baru.bayar] + ")";
     $("invoiceStatusMsg").className = "status ok";
   }catch(e){
     $("invoiceStatusMsg").textContent = "Gagal menyimpan: " + e.message;
     $("invoiceStatusMsg").className = "status err";
   }
 }
-$("invBtnPaid").addEventListener("click", () => changeInvoiceStatus("Sudah Dibayar"));
-$("invBtnUnpaid").addEventListener("click", () => changeInvoiceStatus("Belum Dibayar"));
-$("invBtnPO").addEventListener("click", () => changeInvoiceStatus("PO"));
+$("invBtnPaid").addEventListener("click", () => changeInvoiceStatus({ bayar: "Sudah Dibayar" }));
+$("invBtnUnpaid").addEventListener("click", () => changeInvoiceStatus({ bayar: "Belum Dibayar" }));
+$("invProdPO").addEventListener("click", () => changeInvoiceStatus({ produk: "PO" }));
+$("invProdBelum").addEventListener("click", () => changeInvoiceStatus({ produk: "Belum Diterima" }));
+$("invProdSudah").addEventListener("click", () => changeInvoiceStatus({ produk: "Sudah Diterima" }));
 $("editInvoiceBtn").addEventListener("click", () => enterEditMode(currentInvoiceId));
 $("backToInquiryBtn").addEventListener("click", () => {
   showScreen("belumDibayarScreen");
@@ -1409,7 +1466,9 @@ async function enterEditMode(transaksiId){
       document.querySelectorAll("#menuOwnerListCard .menu-item .itemDiskon").forEach(i => { i.value = ""; });
     }
     updateCartSummary();
-    setStatusBayar(detail.statusBayar || "Belum Dibayar");
+    const stE = normStatus(detail.statusBayar, detail.statusProduk);
+    setStatusBayar(stE.bayar);
+    setStatusProduk(stE.produk);
     $("editModeNote").style.display = "block";
     $("submitPenjualanBtn").textContent = "Simpan Revisi";
     $("belumDibayarStatusMsg").textContent = "";
@@ -1460,7 +1519,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
   $("penjualanStatusMsg").className = "status";
   try{
     const payload = {
-      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar, discount, ongkir, keterangan: keteranganKirim, alasanGratis: isGratis ? alasanGratis : ""
+      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar: bayarKirim(statusBayar, statusProduk), statusProduk, discount, ongkir, keterangan: keteranganKirim, alasanGratis: isGratis ? alasanGratis : ""
     };
     let result;
     if(editingTransaksiId){
@@ -1495,7 +1554,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
       item.querySelectorAll(".price-btn").forEach(b => b.classList.toggle("active", b.dataset.tier === "special"));
     });
     updateCartSummary();
-    $("btnPaid").click();
+    $("btnPaid").click(); setStatusProduk("Sudah Diterima");
   }catch(e){
     $("penjualanStatusMsg").textContent = "GAGAL menyimpan: " + e.message + ". Coba tekan lagi.";
     $("penjualanStatusMsg").className = "status err";
@@ -1522,7 +1581,15 @@ async function loadBelumDibayar(){
 }
 function applyInquiryFilter(){
   const filter = $("inquiryFilter").value;
-  const filtered = filter ? allTransaksiCache.filter(t => t.status === filter) : allTransaksiCache;
+  const cocok = t => {
+    const st = normStatus(t.status, t.statusProduk);
+    if(!filter) return true;
+    if(filter.indexOf("bayar:") === 0) return st.bayar === filter.slice(6);
+    if(filter === "produk:belum") return st.produk !== "Sudah Diterima";
+    const [p, b] = filter.split("|");
+    return st.produk === p && st.bayar === b;
+  };
+  const filtered = allTransaksiCache.filter(cocok);
   renderBelumDibayar(filtered);
 }
 $("inquiryFilter").addEventListener("change", applyInquiryFilter);
@@ -1532,11 +1599,9 @@ function renderBelumDibayar(list){
     container.innerHTML = '<p class="empty-note">Tidak ada transaksi untuk filter ini.</p>';
     return;
   }
-  const badgeColors = { "PO": "var(--gold)", "Belum Dibayar": "var(--danger)", "Sudah Dibayar": "var(--ok)", "Gratis": "#6D28D9" };
   container.innerHTML = list.map(t => {
     const tanggalStr = new Date(t.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
-    const badgeColor = badgeColors[t.status] || "var(--ink-soft)";
-    const statusLabel = t.status === "Sudah Dibayar" ? "Sudah Lunas" : (t.status === "Belum Dibayar" ? "Belum Lunas" : t.status);
+    const st = normStatus(t.status, t.statusProduk);
     return `
       <div class="bill-item" data-id="${t.idTransaksi}" style="cursor:pointer;">
         <div class="top">
@@ -1544,18 +1609,18 @@ function renderBelumDibayar(list){
           <span class="tanggal">${tanggalStr}</span>
         </div>
         <div style="margin:4px 0;">
-          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#fff; background:${badgeColor}; padding:2px 8px; border-radius:8px;">${statusLabel}</span>
+          <span class="st-chip" style="background:${WARNA_PRODUK[st.produk]}">${st.produk}</span><span class="st-chip" style="background:${WARNA_BAYAR[st.bayar]}">${st.bayar === "Gratis" ? "🎁 Gratis" : LABEL_BAYAR[st.bayar]}</span>
         </div>
         ${t.keterangan ? `<div class="meta" style="font-style:italic; margin-bottom:4px;">"${t.keterangan}"</div>` : ''}
         <div class="bottom">
           <div>
             <div class="rp">${formatRupiah(t.total)}</div>
-            <div class="meta">${t.penjual} · ${t.jumlahItem} item${t.discount > 0 ? ` · diskon ${formatRupiah(t.discount)}` : ''}</div>
+            <div class="meta">${t.penjual} · ${t.jumlahItem} item${t.discount > 0 && st.bayar !== "Gratis" ? ` · diskon ${formatRupiah(t.discount)}` : ''}</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:6px;">
             <button class="icon-btn editPoBtn" style="font-size:11px;">Edit</button>
-            ${t.status === "PO" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Sudah Diserahkan</button>' : ''}
-            ${t.status !== "Sudah Dibayar" && t.status !== "Gratis" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Dibayar</button>' : ''}
+            ${st.produk !== "Sudah Diterima" ? '<button class="icon-btn markDeliveredBtn" style="font-size:11px;">Tandai Sudah Diterima</button>' : ''}
+            ${st.bayar === "Belum Dibayar" ? '<button class="ok-btn markPaidBtn">Tandai Sudah Bayar</button>' : ''}
           </div>
         </div>
       </div>`;
@@ -1575,12 +1640,17 @@ function renderBelumDibayar(list){
       e.stopPropagation();
       const row = btn.closest(".bill-item");
       const id = row.dataset.id;
+      const t = allTransaksiCache.find(x => x.idTransaksi === id);
+      const st = normStatus(t && t.status, t && t.statusProduk);
       btn.disabled = true;
+      btn.textContent = "Menyimpan...";
       try{
-        await apiPost({ action: "updateStatusBayar", transaksiId: id, statusBayar: "Belum Dibayar" });
-        loadBelumDibayar();
+        await simpanStatusTransaksi(id, st.bayar, "Sudah Diterima");
+        if(t){ t.status = st.bayar; t.statusProduk = "Sudah Diterima"; }
+        applyInquiryFilter();
       }catch(e){
         btn.disabled = false;
+        btn.textContent = "Gagal, coba lagi";
       }
     });
   });
@@ -1589,14 +1659,14 @@ function renderBelumDibayar(list){
       e.stopPropagation();
       const row = btn.closest(".bill-item");
       const id = row.dataset.id;
+      const t = allTransaksiCache.find(x => x.idTransaksi === id);
+      const st = normStatus(t && t.status, t && t.statusProduk);
       btn.disabled = true;
       btn.textContent = "Menyimpan...";
       try{
-        await apiPost({ action: "updateStatusBayar", transaksiId: id, statusBayar: "Sudah Dibayar" });
-        row.remove();
-        if(!container.querySelector(".bill-item")){
-          container.innerHTML = '<p class="empty-note">Tidak ada transaksi Belum Dibayar / Order 🎉</p>';
-        }
+        await simpanStatusTransaksi(id, "Sudah Dibayar", st.produk);
+        if(t){ t.status = "Sudah Dibayar"; t.statusProduk = st.produk; }
+        applyInquiryFilter();
       }catch(e){
         btn.disabled = false;
         btn.textContent = "Gagal, coba lagi";
