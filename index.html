@@ -227,6 +227,24 @@
   .bill-item .top{ display:flex; justify-content:space-between; align-items:baseline; }
   .bill-item .customer{ font-weight:700; font-size:15px; }
   .bill-item .tanggal{ font-size:12px; color:var(--ink-soft); }
+  .os-switch{ display:flex; gap:6px; background:var(--paper-2); border-radius:12px; padding:4px; margin-bottom:10px; }
+  .os-sw{ flex:1; border:none; background:transparent; padding:9px 6px; border-radius:9px; font-weight:600; font-size:13px; color:var(--ink-soft); cursor:pointer; }
+  .os-sw.active{ background:#fff; color:var(--maroon-dark); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .os-kpis{ display:flex; gap:8px; margin-bottom:10px; }
+  .os-kpi{ flex:1; background:#fff; border-radius:12px; padding:10px; border:1px solid rgba(0,0,0,.06); }
+  .os-kpi .l{ font-size:11px; color:var(--ink-soft); font-weight:600; }
+  .os-kpi .v{ font-size:22px; font-weight:700; margin:2px 0; }
+  .os-kpi .s{ font-size:10.5px; color:var(--ink-soft); }
+  .os-grup.telat{ border-left:4px solid var(--maroon); }
+  .os-judul{ display:flex; justify-content:space-between; font-weight:700; font-size:14px; margin-bottom:8px; color:var(--maroon-dark); }
+  .os-menu{ display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px dashed rgba(0,0,0,.08); font-size:14px; }
+  .os-menu b{ font-size:16px; }
+  .os-detail{ margin-top:8px; font-size:13px; }
+  .os-detail summary{ cursor:pointer; color:var(--ink-soft); font-weight:600; padding:4px 0; }
+  .os-order{ padding:8px 0; border-top:1px solid rgba(0,0,0,.06); cursor:pointer; }
+  .os-order .t{ display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+  .os-order .m{ color:var(--ink-soft); font-size:12px; margin-top:2px; }
+
   .bill-item .bottom{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
   .bill-item .rp{ font-variant-numeric:tabular-nums; font-family:Consolas, monospace; font-weight:700; font-size:16px; color:var(--maroon-dark); }
   .bill-item .meta{ font-size:12px; color:var(--ink-soft); }
@@ -299,7 +317,7 @@
   <div class="tabs" id="penjualanGroup">
     <button class="tab-btn active" data-screen="penjualanScreen">Input</button>
     <button class="tab-btn" data-screen="belumDibayarScreen">Inquiry</button>
-    <button class="tab-btn" data-screen="penjualanReportScreen">Report</button>
+    <button class="tab-btn" data-screen="outstandingScreen">Outstanding</button>
     <button class="tab-btn" data-screen="modalAsetScreen">Modal &amp; Aset</button>
     <button class="tab-btn" data-screen="settingMenuScreen">Setting Menu</button>
   </div>
@@ -328,7 +346,8 @@
       <label for="customerInput">Nama Customer</label>
       <input type="text" id="customerInput" list="customerOptions" placeholder="Ketik atau pilih nama customer" autocomplete="off">
       <datalist id="customerOptions"></datalist>
-      <label for="tanggalInputOwner">Tanggal</label>
+      <label for="tanggalInputOwner">Tanggal Kirim</label>
+      <p style="font-size:11px; color:var(--ink-soft); margin:-6px 0 8px;">Kapan produk dikirim / diambil customer. Tanggal transaksi otomatis tercatat hari ini.</p>
       <input type="date" id="tanggalInputOwner">
     </div>
 
@@ -612,20 +631,19 @@
     </div>
   </section>
 
-  <!-- ===================== REPORT UANG MASUK ===================== -->
-  <section class="screen" id="penjualanReportScreen">
-    <p class="form-section-title" style="margin-top:0">Report Uang Masuk</p>
-    <div class="card" style="padding:10px 12px;">
-      <select id="pemasukanReportBulan" style="border:none; padding:6px;">
-        <option value="">Semua Bulan</option>
-      </select>
+  <!-- ===================== OUTSTANDING ===================== -->
+  <section class="screen" id="outstandingScreen">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+      <p class="form-section-title" style="margin:0; flex:1">Outstanding</p>
+      <button class="icon-btn" id="osRefresh" style="font-size:12px;">↻ Muat ulang</button>
     </div>
-    <div class="card">
-      <p class="form-section-title" style="margin-top:0">Estimasi Uang Masuk per Kategori</p>
-      <p id="pemasukanReportPeriodeNote" style="font-size:11.5px; color:var(--ink-soft); margin:-6px 0 10px;"></p>
-      <div id="pemasukanReportChart"></div>
-      <div class="receipt-line total" style="margin-top:8px;"><span>Total</span><span class="val" id="pemasukanReportGrandTotal">Rp0</span></div>
+    <div class="os-switch">
+      <button type="button" class="os-sw active" data-os="produk">📦 Produk (PO)</button>
+      <button type="button" class="os-sw" data-os="bayar">💰 Pembayaran</button>
     </div>
+    <p class="status" id="osStatusMsg"></p>
+    <div id="osProduk"></div>
+    <div id="osBayar" style="display:none;"></div>
   </section>
 
   <!-- ===================== JENIS PRODUCT ===================== -->
@@ -942,7 +960,7 @@
 // ================== KONFIGURASI ==================
 // URL Web App Apps Script YANG SAMA dengan Jeda Rider/Admin (satu backend).
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbys_3TssKzKvycmsQqI8MHg12aqUnFUpuTl8ZACXAyUrK5mnWNsaC1bmbMd1Tt8GhTl/exec";
-const APP_VERSION = "2026-11-20-status-produk-v39";
+const APP_VERSION = "2026-11-25-outstanding-v40";
 document.getElementById("appVersionLabel").textContent = APP_VERSION;
 // ==================================================
 
@@ -1007,7 +1025,7 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
     if(btn.dataset.screen === "kategoriProductScreen") renderKategoriProductList();
     if(btn.dataset.screen === "procurementInquiryScreen") loadProcurementInquiry();
     if(btn.dataset.screen === "procurementReportScreen") loadProcurementReport();
-    if(btn.dataset.screen === "penjualanReportScreen") loadPenjualanReport();
+    if(btn.dataset.screen === "outstandingScreen") loadOutstanding();
     if(btn.dataset.screen === "modalAsetScreen") loadModalAset();
     if(btn.dataset.screen === "satuanOwnerScreen") renderSatuanOwnerList();
     if(btn.dataset.screen === "settingMenuScreen") renderMenuOwnerManage();
@@ -1272,7 +1290,9 @@ function updateCartSummary(){
   const customerName = $("customerInput").value.trim();
   $("receiptCustomerLine").textContent = "Customer: " + (customerName || "—");
   const tanggalPilihan = $("tanggalInputOwner").value ? new Date($("tanggalInputOwner").value + "T00:00:00") : new Date();
-  $("receiptTanggalLine").textContent = "Tanggal: " + tanggalPilihan.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+  const fmtPanjang = d => d.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+  const tglTransaksi = editingTransaksiId && editTanggalTransaksi ? new Date(editTanggalTransaksi + "T00:00:00") : new Date();
+  $("receiptTanggalLine").textContent = "Tanggal: " + fmtPanjang(tglTransaksi) + " · Kirim: " + fmtPanjang(tanggalPilihan);
 }
 $("customerInput").addEventListener("input", updateCartSummary);
 attachRupiahInput($("discountInput"));
@@ -1335,6 +1355,8 @@ $("cancelEditBtn").addEventListener("click", (e) => {
 let currentInvoiceId = null;
 async function openInvoice(transaksiId){
   currentInvoiceId = transaksiId;
+  const aktif = document.querySelector(".screen.active");
+  if(aktif && aktif.id !== "invoiceScreen") invoiceAsal = aktif.id;
   showScreen("invoiceScreen");
   $("invoiceStatusMsg").textContent = "Memuat...";
   $("invoiceStatusMsg").className = "status";
@@ -1342,7 +1364,8 @@ async function openInvoice(transaksiId){
     const detail = await apiPost({ action: "getTransaksiOwnerDetail", transaksiId });
     const tanggalStr = new Date(detail.tanggal + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
     $("invoiceCustomerLine").textContent = "Customer: " + (detail.customer || "—");
-    $("invoiceTanggalLine").textContent = "Tanggal: " + tanggalStr;
+    const kirimStr = detail.tanggalKirim ? new Date(detail.tanggalKirim + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" }) : "";
+    $("invoiceTanggalLine").textContent = "Tanggal: " + tanggalStr + (kirimStr ? " · Kirim: " + kirimStr : "");
 
     let subtotal = 0;
     $("invoiceLines").innerHTML = detail.items.map(it => {
@@ -1423,7 +1446,9 @@ $("invProdPO").addEventListener("click", () => changeInvoiceStatus({ produk: "PO
 $("invProdBelum").addEventListener("click", () => changeInvoiceStatus({ produk: "Belum Diterima" }));
 $("invProdSudah").addEventListener("click", () => changeInvoiceStatus({ produk: "Sudah Diterima" }));
 $("editInvoiceBtn").addEventListener("click", () => enterEditMode(currentInvoiceId));
+let invoiceAsal = "belumDibayarScreen";
 $("backToInquiryBtn").addEventListener("click", () => {
+  if(invoiceAsal === "outstandingScreen"){ showScreen("outstandingScreen"); loadOutstanding(); return; }
   showScreen("belumDibayarScreen");
   loadBelumDibayar();
 });
@@ -1436,7 +1461,8 @@ async function enterEditMode(transaksiId){
     editingTransaksiId = transaksiId;
     $("penjualInput").value = detail.penjual;
     $("customerInput").value = detail.customer || "";
-    $("tanggalInputOwner").value = detail.tanggal || localDateStr(new Date());
+    editTanggalTransaksi = detail.tanggal || "";
+    $("tanggalInputOwner").value = detail.tanggalKirim || detail.tanggal || localDateStr(new Date());
     $("discountInput").value = ""; // diskon lama sudah tercatat per item di bawah, jangan dobel
     $("ongkirInput").value = detail.ongkir ? "Rp" + Number(detail.ongkir).toLocaleString("id-ID") : "";
     $("keteranganInput").value = detail.keterangan || "";
@@ -1519,7 +1545,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
   $("penjualanStatusMsg").className = "status";
   try{
     const payload = {
-      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar: bayarKirim(statusBayar, statusProduk), statusProduk, discount, ongkir, keterangan: keteranganKirim, alasanGratis: isGratis ? alasanGratis : ""
+      penjual, customer, tanggal: $("tanggalInputOwner").value || localDateStr(new Date()), tanggalKirim: $("tanggalInputOwner").value || localDateStr(new Date()), items, statusBayar: bayarKirim(statusBayar, statusProduk), statusProduk, discount, ongkir, keterangan: keteranganKirim, alasanGratis: isGratis ? alasanGratis : ""
     };
     let result;
     if(editingTransaksiId){
@@ -1565,6 +1591,7 @@ $("submitPenjualanBtn").addEventListener("click", async () => {
 
 // ---------- Belum Dibayar ----------
 let allTransaksiCache = [];
+let editTanggalTransaksi = "";
 async function loadBelumDibayar(){
   const container = $("belumDibayarList");
   container.innerHTML = '<p class="empty-note">Memuat...</p>';
@@ -1606,7 +1633,7 @@ function renderBelumDibayar(list){
       <div class="bill-item" data-id="${t.idTransaksi}" style="cursor:pointer;">
         <div class="top">
           <span class="customer">${t.customer || "(tanpa nama)"}</span>
-          <span class="tanggal">${tanggalStr}</span>
+          <span class="tanggal">${tanggalStr}${t.tanggalKirim && t.tanggalKirim !== t.tanggal ? " · kirim " + new Date(t.tanggalKirim + "T00:00:00").toLocaleDateString("id-ID", { day:"numeric", month:"short" }) : ""}</span>
         </div>
         <div style="margin:4px 0;">
           <span class="st-chip" style="background:${WARNA_PRODUK[st.produk]}">${st.produk}</span><span class="st-chip" style="background:${WARNA_BAYAR[st.bayar]}">${st.bayar === "Gratis" ? "🎁 Gratis" : LABEL_BAYAR[st.bayar]}</span>
@@ -3577,77 +3604,89 @@ function renderProcSpendChart(bulanFilter){
   $("procSpendGrandTotal").textContent = formatRupiah(grandTotal);
 }
 
-// ---------- Report Uang Masuk ----------
-let pemasukanSummaryCache = {};
-async function loadPenjualanReport(){
-  const select = $("pemasukanReportBulan");
-  const current = select.value;
+// ---------- Outstanding (PO yang belum diterima & pembayaran yang belum lunas) ----------
+let osData = null, osTab = "produk";
+const fmtTglOs = (d, opt) => new Date(d + "T00:00:00").toLocaleDateString("id-ID", opt || { weekday:"short", day:"numeric", month:"short" });
+const selisihHariOs = (a, b) => Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 86400000);
+async function loadOutstanding(){
+  $("osStatusMsg").textContent = "Memuat..."; $("osStatusMsg").className = "status";
   try{
-    const data = await apiGet({ action: "getRingkasanUangMasuk" });
-    pemasukanSummaryCache = data.summary || {};
-    const bulanSet = Object.keys(pemasukanSummaryCache).sort((a, b) => b.localeCompare(a));
-    select.innerHTML = '<option value="">Semua Bulan</option>' +
-      bulanSet.map(k => `<option value="${k}">${bulanLabelOf(k)}</option>`).join("");
-    if(bulanSet.includes(current)) select.value = current;
-    renderPemasukanReportChart(select.value);
-  }catch(e){
-    $("pemasukanReportChart").innerHTML = "";
-    $("pemasukanReportPeriodeNote").textContent = "Gagal memuat: " + e.message;
-  }
+    const d = await apiGet({ action: "getOutstandingOwner" });
+    if(!d.produk) throw new Error("server belum diupdate. Tempel Code.gs terbaru ke Kode.gs lalu Deploy → New version.");
+    osData = d; $("osStatusMsg").textContent = "";
+    renderOutstanding();
+  }catch(e){ $("osStatusMsg").textContent = "Gagal memuat: " + e.message; $("osStatusMsg").className = "status error"; }
 }
-$("pemasukanReportBulan").addEventListener("change", () => renderPemasukanReportChart($("pemasukanReportBulan").value));
-
-const PEMASUKAN_KATEGORI_ORDER = ["Jeda Rider", "Jeda Owner", "Investment/Jual Aset"];
-const PEMASUKAN_KATEGORI_COLOR = {
-  "Jeda Rider": "#7A1E2B",           // merah tua (warna utama Jeda Owner)
-  "Jeda Owner": "#B5495A",           // merah medium
-  "Investment/Jual Aset": "#E3A2AC" // merah muda
-};
-function renderPemasukanReportChart(bulanFilter){
-  $("pemasukanReportPeriodeNote").textContent = bulanFilter ? bulanLabelOf(bulanFilter) : "Semua bulan (seluruh data)";
-  const totals = {};
-  let grandTotal = 0;
-  const bulanKeys = bulanFilter ? [bulanFilter] : Object.keys(pemasukanSummaryCache);
-  bulanKeys.forEach(bk => {
-    const perKategori = pemasukanSummaryCache[bk] || {};
-    Object.entries(perKategori).forEach(([kategori, total]) => {
-      totals[kategori] = (totals[kategori] || 0) + total;
-      grandTotal += total;
-    });
+$("osRefresh").addEventListener("click", loadOutstanding);
+document.querySelectorAll(".os-sw").forEach(b => b.addEventListener("click", () => {
+  osTab = b.dataset.os;
+  document.querySelectorAll(".os-sw").forEach(x => x.classList.toggle("active", x === b));
+  $("osProduk").style.display = osTab === "produk" ? "" : "none";
+  $("osBayar").style.display = osTab === "bayar" ? "" : "none";
+}));
+function renderOutstanding(){
+  if(!osData) return;
+  const hari = osData.hariIni, besok = localDateStr(new Date(new Date(hari + "T00:00:00").getTime() + 86400000));
+  // ---- Produk: dikelompokkan per tanggal kirim, lalu per menu ----
+  const grup = {};
+  osData.produk.forEach(p => {
+    const kunci = p.tanggalKirim < hari ? "terlambat" : p.tanggalKirim;
+    (grup[kunci] = grup[kunci] || []).push(p);
   });
-  const chart = $("pemasukanReportChart");
-  if(grandTotal <= 0){
-    chart.innerHTML = '<p class="empty-note">Belum ada data Uang Masuk di periode ini.</p>';
-    $("pemasukanReportGrandTotal").textContent = formatRupiah(0);
-    return;
-  }
-  // Bangun conic-gradient sesuai urutan tetap (bukan urut besar-kecil), biar warnanya konsisten tiap dilihat
-  let cumulativePct = 0;
-  const gradientStops = [];
-  const legendRows = [];
-  PEMASUKAN_KATEGORI_ORDER.forEach(kategori => {
-    const total = totals[kategori] || 0;
-    const pct = (total / grandTotal) * 100;
-    const color = PEMASUKAN_KATEGORI_COLOR[kategori];
-    if(pct > 0){
-      gradientStops.push(`${color} ${cumulativePct}% ${cumulativePct + pct}%`);
-      cumulativePct += pct;
-    }
-    legendRows.push(`
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-        <span style="width:13px; height:13px; border-radius:4px; background:${color}; flex-shrink:0;"></span>
-        <span style="flex:1; font-size:13.5px; font-weight:600;">${kategori}</span>
-        <span style="font-size:13px; color:var(--ink-soft); font-variant-numeric:tabular-nums;">${Math.round(pct)}%</span>
-      </div>
-      <div style="font-size:12px; color:var(--ink-soft); margin:-6px 0 0 21px;">${formatRupiah(total)}</div>`);
-  });
-  const gradient = gradientStops.length ? `conic-gradient(${gradientStops.join(", ")})` : "var(--paper-2)";
-  chart.innerHTML = `
-    <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center;">
-      <div style="width:150px; height:150px; border-radius:50%; background:${gradient}; flex-shrink:0;"></div>
-      <div style="flex:1; min-width:180px;">${legendRows.join("")}</div>
+  const urut = Object.keys(grup).sort((a, b) => a === "terlambat" ? -1 : b === "terlambat" ? 1 : a.localeCompare(b));
+  const judul = k => k === "terlambat" ? "⚠️ Terlambat (lewat tanggal kirim)" : k === hari ? "Hari ini · " + fmtTglOs(k) : k === besok ? "Besok · " + fmtTglOs(k) : fmtTglOs(k, { weekday:"long", day:"numeric", month:"short" });
+  const totalQty = arr => arr.reduce((s, p) => s + p.qty, 0);
+  const qtyHari = (grup.terlambat ? totalQty(grup.terlambat) : 0) + (grup[hari] ? totalQty(grup[hari]) : 0);
+  const qtyBesok = grup[besok] ? totalQty(grup[besok]) : 0;
+  const ringkas = `<div class="os-kpis">
+      <div class="os-kpi"><div class="l">Siapkan hari ini</div><div class="v">${qtyHari}</div><div class="s">item (termasuk terlambat)</div></div>
+      <div class="os-kpi"><div class="l">Untuk besok</div><div class="v">${qtyBesok}</div><div class="s">item</div></div>
+      <div class="os-kpi"><div class="l">Total</div><div class="v">${totalQty(osData.produk)}</div><div class="s">item · ${new Set(osData.produk.map(p => p.idTransaksi)).size} order</div></div>
     </div>`;
-  $("pemasukanReportGrandTotal").textContent = formatRupiah(grandTotal);
+  $("osProduk").innerHTML = !osData.produk.length ? '<p class="empty-note">Tidak ada PO / produk yang belum diterima. 🎉</p>' : ringkas + urut.map(k => {
+    const arr = grup[k], perMenu = {};
+    arr.forEach(p => { perMenu[p.menu] = (perMenu[p.menu] || 0) + p.qty; });
+    const menuRows = Object.entries(perMenu).sort((a, b) => b[1] - a[1]).map(([m, q]) => `<div class="os-menu"><span>${escHtml(m)}</span><b>${q}</b></div>`).join("");
+    const perOrder = {};
+    arr.forEach(p => { const o = perOrder[p.idTransaksi] || (perOrder[p.idTransaksi] = { p, items: [] }); o.items.push(p.menu + " ×" + p.qty); });
+    const orderRows = Object.values(perOrder).map(({ p, items }) => {
+      const st = normStatus(p.statusBayar, p.statusProduk);
+      return `<div class="os-order" data-id="${escHtml(p.idTransaksi)}">
+        <div class="t"><b>${escHtml(p.customer || "(tanpa nama)")}</b><span class="st-chip" style="background:${WARNA_PRODUK[st.produk]}">${st.produk}</span><span class="st-chip" style="background:${WARNA_BAYAR[st.bayar]}">${st.bayar === "Gratis" ? "🎁 Gratis" : LABEL_BAYAR[st.bayar]}</span></div>
+        <div class="m">${escHtml(items.join(", "))}${k === "terlambat" ? " · kirim " + fmtTglOs(p.tanggalKirim) : ""}${p.keterangan ? ` · <i>"${escHtml(p.keterangan)}"</i>` : ""}</div>
+        <button class="icon-btn osTerima" style="font-size:11px; margin-top:6px;">Tandai Sudah Diterima</button>
+      </div>`;
+    }).join("");
+    return `<div class="card os-grup${k === "terlambat" ? " telat" : ""}">
+      <div class="os-judul"><span>${judul(k)}</span><span>${totalQty(arr)} item</span></div>
+      ${menuRows}
+      <details class="os-detail"><summary>Lihat ${Object.keys(perOrder).length} order</summary>${orderRows}</details>
+    </div>`;
+  }).join("");
+  // ---- Pembayaran: transaksi yang belum dibayar, paling lama di atas ----
+  const bb = osData.belumBayar, totalRp = bb.reduce((s, t) => s + t.total, 0);
+  $("osBayar").innerHTML = !bb.length ? '<p class="empty-note">Semua transaksi sudah dibayar. 🎉</p>' : `<div class="os-kpis">
+      <div class="os-kpi"><div class="l">Belum dibayar</div><div class="v" style="color:var(--maroon)">${formatRupiah(totalRp)}</div><div class="s">${bb.length} transaksi</div></div>
+    </div>` + bb.map(t => {
+      const umur = selisihHariOs(t.tanggal, osData.hariIni);
+      return `<div class="bill-item os-bayar" data-id="${escHtml(t.idTransaksi)}" style="cursor:pointer;">
+        <div class="top"><span class="customer">${escHtml(t.customer || "(tanpa nama)")}</span><span class="tanggal">${fmtTglOs(t.tanggal, { day:"numeric", month:"short" })}${umur > 0 ? ` · <b style="color:${umur > 7 ? "var(--maroon)" : "inherit"}">${umur} hari</b>` : " · hari ini"}</span></div>
+        <div style="margin:4px 0;"><span class="st-chip" style="background:${WARNA_PRODUK[t.statusProduk]}">${t.statusProduk}</span></div>
+        <div class="meta" style="margin-bottom:4px;">${escHtml(t.items.join(", "))}</div>
+        <div class="bottom"><div><div class="rp">${formatRupiah(t.total)}</div><div class="meta">${escHtml(t.penjual || "")}</div></div>
+          <button class="ok-btn osBayarBtn">Tandai Sudah Bayar</button></div>
+      </div>`;
+    }).join("");
+  document.querySelectorAll("#osBayar .os-bayar, #osProduk .os-order").forEach(el => el.addEventListener("click", () => openInvoice(el.dataset.id)));
+  const tandai = (sel, fn) => document.querySelectorAll(sel).forEach(btn => btn.addEventListener("click", async e => {
+    e.stopPropagation();
+    const id = btn.closest("[data-id]").dataset.id;
+    btn.disabled = true; btn.textContent = "Menyimpan...";
+    try{ await fn(id); await loadOutstanding(); }
+    catch(err){ btn.disabled = false; btn.textContent = "Gagal, coba lagi"; }
+  }));
+  tandai(".osTerima", id => { const p = osData.produk.find(x => x.idTransaksi === id); return simpanStatusTransaksi(id, normStatus(p.statusBayar, p.statusProduk).bayar, "Sudah Diterima"); });
+  tandai(".osBayarBtn", id => { const t = osData.belumBayar.find(x => x.idTransaksi === id); return simpanStatusTransaksi(id, "Sudah Dibayar", t.statusProduk); });
 }
 
 function renderProcurementInquiry(list){
